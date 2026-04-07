@@ -34,7 +34,7 @@ const { copied, copyLink } = useCopyLink();
     <div class="mx-auto w-full max-w-6xl flex-1 px-6 py-8">
         <Link
             :href="home()"
-            class="mb-6 inline-flex items-center gap-1.5 text-sm text-eagle-muted transition-colors hover:text-eagle-text"
+            class="mb-6 inline-flex items-center gap-1.5 text-sm text-eagle-blue transition-colors hover:text-eagle-text"
         >
             <ArrowLeft class="size-4" />
             Back
@@ -50,7 +50,7 @@ const { copied, copyLink } = useCopyLink();
             </span>
             <button
                 type="button"
-                class="shrink-0 inline-flex items-center gap-1.5 rounded-lg border border-eagle-border bg-eagle-card px-3 py-1.5 text-sm text-eagle-muted transition-colors hover:border-eagle-blue/40 hover:text-eagle-text"
+                class="shrink-0 inline-flex items-center gap-1.5 rounded-lg border border-eagle-border bg-eagle-card px-3 py-1.5 text-sm text-eagle-blue transition-colors hover:border-eagle-blue/40 hover:text-eagle-text"
                 @click="copyLink"
             >
                 <Check v-if="copied" class="size-3.5 text-green-400" />

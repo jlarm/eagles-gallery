@@ -96,7 +96,7 @@ const { copied, copyLink } = useCopyLink();
         <!-- Back -->
         <Link
             :href="album.tournament ? showTournament(album.tournament) : home()"
-            class="inline-flex items-center gap-1.5 text-sm text-eagle-muted transition-colors hover:text-eagle-text"
+            class="inline-flex items-center gap-1.5 text-sm text-eagle-blue transition-colors hover:text-eagle-text"
         >
             <ArrowLeft class="size-4" />
             {{ album.tournament ? album.tournament.name : 'Back' }}
@@ -114,7 +114,7 @@ const { copied, copyLink } = useCopyLink();
                 </h1>
                 <button
                     type="button"
-                    class="inline-flex items-center gap-1.5 rounded-lg border border-eagle-border bg-eagle-card px-3 py-1.5 text-sm text-eagle-muted transition-colors hover:border-eagle-blue/40 hover:text-eagle-text"
+                    class="inline-flex items-center gap-1.5 rounded-lg border border-eagle-border bg-eagle-card px-3 py-1.5 text-sm text-eagle-blue transition-colors hover:border-eagle-blue/40 hover:text-eagle-text"
                     @click="copyLink"
                 >
                     <Check v-if="copied" class="size-3.5 text-green-400" />
