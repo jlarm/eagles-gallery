@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import { CalendarDays, CheckCircle2, ImagePlus, Loader2, Star, Trash2, Upload, X, XCircle } from 'lucide-vue-next';
-import { ref } from 'vue';
-import { destroy as destroyPhoto, presign as presignAction, setCover, store as storeAction } from '@/actions/App/Http/Controllers/PhotoController';
+import { ref, watch } from 'vue';
+import { destroy as destroyPhoto, presign as presignAction, reorder as reorderAction, setCover, store as storeAction } from '@/actions/App/Http/Controllers/PhotoController';
 import { show as showTournament } from '@/actions/App/Http/Controllers/TournamentController';
 import { index as galleryIndex } from '@/actions/App/Http/Controllers/GalleryController';
 import { Button } from '@/components/ui/button';
@@ -192,6 +192,44 @@ function confirmDelete(photo: Photo) {
     router.delete(destroyPhoto.url({ album: props.album.id, photo: photo.id }));
 }
 
+// Reorder
+const localPhotos = ref<Photo[]>([...props.album.photos]);
+const draggedId = ref<number | null>(null);
+
+watch(
+    () => props.album.photos,
+    (photos) => { localPhotos.value = [...photos]; },
+);
+
+function onDragStart(photoId: number) {
+    draggedId.value = photoId;
+}
+
+function onDragOver(targetId: number) {
+    if (draggedId.value === null || draggedId.value === targetId) return;
+
+    const fromIndex = localPhotos.value.findIndex((p) => p.id === draggedId.value);
+    const toIndex = localPhotos.value.findIndex((p) => p.id === targetId);
+
+    if (fromIndex === -1 || toIndex === -1) return;
+
+    const updated = [...localPhotos.value];
+    const [moved] = updated.splice(fromIndex, 1);
+    updated.splice(toIndex, 0, moved);
+    localPhotos.value = updated;
+}
+
+function onDragEnd() {
+    if (draggedId.value === null) return;
+    draggedId.value = null;
+
+    router.post(
+        reorderAction.url(props.album),
+        { ids: localPhotos.value.map((p) => p.id) },
+        { preserveScroll: true, only: ['album'] },
+    );
+}
+
 // Lightbox
 const lightboxPhoto = ref<Photo | null>(null);
 </script>
@@ -318,11 +356,16 @@ const lightboxPhoto = ref<Photo | null>(null);
         </div>
 
         <!-- Photo grid -->
-        <div v-if="album.photos.length" class="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+        <div v-if="localPhotos.length" class="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
             <div
-                v-for="photo in album.photos"
+                v-for="photo in localPhotos"
                 :key="photo.id"
-                class="group relative aspect-square overflow-hidden rounded-lg bg-muted"
+                class="group relative aspect-square overflow-hidden rounded-lg bg-muted transition-opacity"
+                :class="{ 'opacity-40': draggedId === photo.id, 'cursor-grab': isAuthenticated }"
+                :draggable="isAuthenticated"
+                @dragstart="onDragStart(photo.id)"
+                @dragover.prevent="onDragOver(photo.id)"
+                @dragend="onDragEnd"
             >
                 <button
                     type="button"

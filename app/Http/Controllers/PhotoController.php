@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\PresignPhotoRequest;
+use App\Http\Requests\ReorderPhotosRequest;
 use App\Http\Requests\StorePhotosRequest;
 use App\Jobs\ProcessUploadedPhoto;
 use App\Models\Album;
@@ -59,6 +60,17 @@ class PhotoController extends Controller
 
             ProcessUploadedPhoto::dispatch($photo);
         }
+
+        return redirect()->route('albums.show', $album);
+    }
+
+    public function reorder(ReorderPhotosRequest $request, Album $album): RedirectResponse
+    {
+        DB::transaction(function () use ($request, $album) {
+            foreach ($request->validated()['ids'] as $sortOrder => $id) {
+                $album->photos()->where('id', $id)->update(['sort_order' => $sortOrder]);
+            }
+        });
 
         return redirect()->route('albums.show', $album);
     }

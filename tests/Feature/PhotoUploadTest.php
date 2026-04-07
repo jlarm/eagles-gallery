@@ -96,6 +96,41 @@ it('validates each confirmed photo has a filename and path', function () {
         ->assertInvalid(['photos.0.filename', 'photos.0.path']);
 });
 
+// --- Reorder endpoint ---
+
+it('requires auth to reorder photos', function () {
+    $album = Album::factory()->create();
+
+    $this->post("/albums/{$album->id}/photos/reorder", ['ids' => []])
+        ->assertRedirect('/login');
+});
+
+it('updates sort_order for each photo in the given sequence', function () {
+    $album = Album::factory()->create();
+    [$a, $b, $c] = Photo::factory()->for($album)->count(3)->create();
+
+    $this->actingAs(User::factory()->create())
+        ->post("/albums/{$album->id}/photos/reorder", ['ids' => [$c->id, $a->id, $b->id]])
+        ->assertRedirect("/albums/{$album->id}");
+
+    expect($c->fresh()->sort_order)->toBe(0);
+    expect($a->fresh()->sort_order)->toBe(1);
+    expect($b->fresh()->sort_order)->toBe(2);
+});
+
+it('ignores ids that do not belong to the album', function () {
+    $album = Album::factory()->create();
+    $photo = Photo::factory()->for($album)->create();
+    $other = Photo::factory()->create(); // different album
+
+    $this->actingAs(User::factory()->create())
+        ->post("/albums/{$album->id}/photos/reorder", ['ids' => [$other->id, $photo->id]])
+        ->assertRedirect("/albums/{$album->id}");
+
+    // Other album's photo sort_order should not be touched
+    expect($other->fresh()->sort_order)->toBe($other->sort_order);
+});
+
 // --- Delete endpoint ---
 
 it('requires auth to delete a photo', function () {

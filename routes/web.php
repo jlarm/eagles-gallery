@@ -24,6 +24,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/albums', [AlbumController::class, 'store'])->name('albums.store');
 
     Route::post('/albums/{album}/photos/presign', [PhotoController::class, 'presign'])->name('albums.photos.presign');
+    Route::post('/albums/{album}/photos/reorder', [PhotoController::class, 'reorder'])->name('albums.photos.reorder');
     Route::post('/albums/{album}/photos', [PhotoController::class, 'store'])->name('albums.photos.store');
     Route::post('/albums/{album}/photos/{photo}/cover', [PhotoController::class, 'setCover'])->name('albums.photos.cover');
     Route::delete('/albums/{album}/photos/{photo}', [PhotoController::class, 'destroy'])->name('albums.photos.destroy');
