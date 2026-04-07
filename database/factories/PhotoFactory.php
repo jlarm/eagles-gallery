@@ -18,8 +18,19 @@ class PhotoFactory extends Factory
         return [
             'album_id' => Album::factory(),
             'filename' => $filename,
-            'path' => 'photos/'.$filename,
+            'original_path' => 'photos/originals/'.$filename,
+            'web_path' => 'photos/web/'.$filename,
+            'thumbnail_path' => 'photos/thumbnails/'.$filename,
             'sort_order' => fake()->numberBetween(0, 100),
+            'is_cover' => false,
         ];
+    }
+
+    public function unprocessed(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'web_path' => null,
+            'thumbnail_path' => null,
+        ]);
     }
 }

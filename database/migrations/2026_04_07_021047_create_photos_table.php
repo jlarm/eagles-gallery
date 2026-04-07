@@ -15,7 +15,9 @@ return new class extends Migration
             $table->id();
             $table->unsignedBigInteger('album_id');
             $table->string('filename');
-            $table->string('path');
+            $table->string('original_path');
+            $table->string('web_path')->nullable();
+            $table->string('thumbnail_path')->nullable();
             $table->unsignedInteger('sort_order')->default(0);
             $table->boolean('is_cover')->default(false);
             $table->timestamps();
