@@ -190,3 +190,39 @@ it('returns 404 when photo does not belong to the album', function () {
         ->delete("/albums/{$album->id}/photos/{$photo->id}")
         ->assertNotFound();
 });
+
+// --- Download endpoint ---
+
+it('redirects to a presigned download url for a processed photo', function () {
+    $album = Album::factory()->create();
+    $photo = Photo::factory()->for($album)->create([
+        'web_path' => 'photos/1/web/test.jpg',
+        'thumbnail_path' => 'photos/1/thumbnails/test.jpg',
+    ]);
+
+    $this->get("/albums/{$album->id}/photos/{$photo->id}/download")
+        ->assertRedirect();
+});
+
+it('returns 404 for download when photo is not yet processed', function () {
+    $album = Album::factory()->create();
+    $photo = Photo::factory()->for($album)->create([
+        'web_path' => null,
+        'thumbnail_path' => null,
+    ]);
+
+    $this->get("/albums/{$album->id}/photos/{$photo->id}/download")
+        ->assertNotFound();
+});
+
+it('returns 404 for download when photo does not belong to the album', function () {
+    $album = Album::factory()->create();
+    $otherAlbum = Album::factory()->create();
+    $photo = Photo::factory()->for($otherAlbum)->create([
+        'web_path' => 'photos/2/web/test.jpg',
+        'thumbnail_path' => 'photos/2/thumbnails/test.jpg',
+    ]);
+
+    $this->get("/albums/{$album->id}/photos/{$photo->id}/download")
+        ->assertNotFound();
+});

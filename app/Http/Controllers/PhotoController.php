@@ -91,4 +91,18 @@ class PhotoController extends Controller
 
         return redirect()->route('albums.show', $album);
     }
+
+    public function download(Album $album, Photo $photo): RedirectResponse
+    {
+        abort_unless($photo->album_id === $album->id, 404);
+        abort_unless($photo->isProcessed(), 404);
+
+        $url = Storage::disk('spaces')->temporaryUrl(
+            $photo->web_path,
+            now()->addMinutes(10),
+            ['ResponseContentDisposition' => 'attachment; filename="'.$photo->filename.'"'],
+        );
+
+        return redirect($url);
+    }
 }

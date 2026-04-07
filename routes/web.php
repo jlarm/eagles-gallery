@@ -5,11 +5,8 @@ use App\Http\Controllers\GalleryController;
 use App\Http\Controllers\PhotoController;
 use App\Http\Controllers\TournamentController;
 use Illuminate\Support\Facades\Route;
-use Laravel\Fortify\Features;
 
-Route::inertia('/', 'Welcome', [
-    'canRegister' => Features::enabled(Features::registration()),
-])->name('home');
+Route::get('/', [GalleryController::class, 'home'])->name('home');
 
 Route::get('/gallery', [GalleryController::class, 'index'])->name('gallery.index');
 
@@ -32,6 +29,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
 // Wildcard routes registered last so they don't shadow static paths
 Route::get('/albums/{album}', [AlbumController::class, 'show'])->name('albums.show');
+Route::get('/albums/{album}/photos/{photo}/download', [PhotoController::class, 'download'])->name('albums.photos.download');
 Route::get('/tournaments/{tournament}', [TournamentController::class, 'show'])->name('tournaments.show');
 
 require __DIR__.'/settings.php';

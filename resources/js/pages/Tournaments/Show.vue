@@ -1,10 +1,9 @@
 <script setup lang="ts">
-import { Head, Link, usePage } from '@inertiajs/vue3';
-import { CalendarDays, Images, Plus } from 'lucide-vue-next';
-import { show as showAlbum, create as createAlbum } from '@/actions/App/Http/Controllers/AlbumController';
-import { show as showTournament } from '@/actions/App/Http/Controllers/TournamentController';
-import { index as galleryIndex } from '@/actions/App/Http/Controllers/GalleryController';
-import { Button } from '@/components/ui/button';
+import { Head, Link } from '@inertiajs/vue3';
+import { ArrowLeft, CalendarDays, Images } from 'lucide-vue-next';
+import { show as showAlbum } from '@/actions/App/Http/Controllers/AlbumController';
+import { home } from '@/routes';
+import PublicLayout from '@/layouts/PublicLayout.vue';
 
 type Album = {
     id: number;
@@ -21,37 +20,31 @@ type Tournament = {
     albums: Album[];
 };
 
-const props = defineProps<{ tournament: Tournament }>();
+defineProps<{ tournament: Tournament }>();
 
-defineOptions({
-    layout: {
-        breadcrumbs: [
-            { title: 'Gallery', href: galleryIndex() },
-        ],
-    },
-});
-
-const page = usePage();
-const isAuthenticated = !!page.props.auth?.user;
+defineOptions({ layout: PublicLayout });
 </script>
 
 <template>
     <Head :title="tournament.name" />
 
-    <div class="flex flex-col gap-6 p-4">
-        <div class="flex items-center justify-between">
-            <div>
-                <h1 class="text-2xl font-semibold tracking-tight">{{ tournament.name }}</h1>
-                <p class="text-sm text-muted-foreground">
-                    {{ tournament.albums.length }} {{ tournament.albums.length === 1 ? 'game' : 'games' }}
-                </p>
-            </div>
-            <Button v-if="isAuthenticated" as-child size="sm">
-                <Link :href="createAlbum({ tournament_id: tournament.id })">
-                    <Plus class="mr-1 h-4 w-4" />
-                    Add Game
-                </Link>
-            </Button>
+    <div class="mx-auto max-w-6xl px-6 py-8">
+        <Link
+            :href="home()"
+            class="mb-6 inline-flex items-center gap-1.5 text-sm text-eagle-muted transition-colors hover:text-eagle-text"
+        >
+            <ArrowLeft class="size-4" />
+            Back
+        </Link>
+
+        <div class="mb-6 flex items-center gap-4">
+            <h1 class="shrink-0 font-display text-[clamp(1.75rem,5vw,2.5rem)] tracking-[0.08em] text-eagle-text">
+                {{ tournament.name }}
+            </h1>
+            <div class="h-px flex-1 bg-eagle-border"></div>
+            <span class="shrink-0 text-sm text-eagle-muted">
+                {{ tournament.albums.length }} {{ tournament.albums.length === 1 ? 'game' : 'games' }}
+            </span>
         </div>
 
         <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -59,23 +52,24 @@ const isAuthenticated = !!page.props.auth?.user;
                 v-for="album in tournament.albums"
                 :key="album.id"
                 :href="showAlbum(album)"
-                class="group relative overflow-hidden rounded-xl border border-sidebar-border/70 transition-colors hover:bg-muted/50 dark:border-sidebar-border"
+                class="group relative overflow-hidden rounded-xl border border-eagle-border bg-eagle-card transition-all duration-300 hover:border-eagle-blue/30"
             >
-                <div class="relative aspect-video w-full overflow-hidden bg-muted">
+                <div class="relative aspect-video w-full overflow-hidden bg-eagle-card">
                     <img
                         v-if="album.cover_photo?.thumbnail_url"
                         :src="album.cover_photo.thumbnail_url"
                         :alt="album.opponent"
-                        class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                        class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                     />
                     <div v-else class="flex h-full items-center justify-center">
-                        <Images class="h-10 w-10 text-muted-foreground/40" />
+                        <Images class="size-10 text-eagle-border" />
                     </div>
+                    <div class="absolute inset-0 bg-gradient-to-t from-eagle-card/80 to-transparent"></div>
                 </div>
-                <div class="p-3">
-                    <p class="font-medium">vs {{ album.opponent }}</p>
-                    <p class="flex items-center gap-1 text-sm text-muted-foreground">
-                        <CalendarDays class="h-3.5 w-3.5" />
+                <div class="p-4">
+                    <p class="font-medium text-eagle-text">vs {{ album.opponent }}</p>
+                    <p class="mt-1 flex items-center gap-1 text-sm text-eagle-muted">
+                        <CalendarDays class="size-3.5" />
                         {{ new Date(album.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) }}
                     </p>
                 </div>
@@ -84,11 +78,11 @@ const isAuthenticated = !!page.props.auth?.user;
 
         <div
             v-if="!tournament.albums.length"
-            class="flex flex-col items-center justify-center py-20 text-center"
+            class="flex flex-col items-center justify-center py-24 text-center"
         >
-            <Images class="mb-4 h-12 w-12 text-muted-foreground/40" />
-            <p class="text-lg font-medium">No games yet</p>
-            <p class="mt-1 text-sm text-muted-foreground">Add a game to this tournament to start uploading photos.</p>
+            <Images class="mb-4 size-12 text-eagle-border" />
+            <p class="text-lg font-medium text-eagle-text">No games yet</p>
+            <p class="mt-1 text-sm text-eagle-muted">Check back soon for game photos.</p>
         </div>
     </div>
 </template>
