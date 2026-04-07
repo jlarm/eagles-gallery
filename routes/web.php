@@ -23,10 +23,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/tournaments/create', [TournamentController::class, 'create'])->name('tournaments.create');
     Route::post('/tournaments', [TournamentController::class, 'store'])->name('tournaments.store');
     Route::get('/manage/tournaments/{tournament}', [TournamentController::class, 'manage'])->name('tournaments.manage');
+    Route::delete('/manage/tournaments/{tournament}', [TournamentController::class, 'destroy'])->name('tournaments.destroy');
 
     Route::get('/albums/create', [AlbumController::class, 'create'])->name('albums.create');
     Route::post('/albums', [AlbumController::class, 'store'])->name('albums.store');
     Route::get('/manage/albums/{album}', [AlbumController::class, 'manage'])->name('albums.manage');
+    Route::delete('/manage/albums/{album}', [AlbumController::class, 'destroy'])->name('albums.destroy');
 
     Route::post('/albums/{album}/photos/presign', [PhotoController::class, 'presign'])->name('albums.photos.presign');
     Route::post('/albums/{album}/photos/reorder', [PhotoController::class, 'reorder'])->name('albums.photos.reorder');

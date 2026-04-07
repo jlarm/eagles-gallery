@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Head, Link, usePage } from '@inertiajs/vue3';
-import { CalendarDays, FolderOpen, Images, Plus } from 'lucide-vue-next';
+import { CalendarDays, Eye, FolderOpen, Images, Plus } from 'lucide-vue-next';
 import { create as createAlbum, manage as manageAlbum } from '@/actions/App/Http/Controllers/AlbumController';
 import { create as createTournament, manage as manageTournament } from '@/actions/App/Http/Controllers/TournamentController';
 import { index as galleryIndex } from '@/actions/App/Http/Controllers/GalleryController';
@@ -11,6 +11,7 @@ type Album = {
     opponent: string;
     date: string;
     slug: string;
+    view_count: number;
     cover_photo: { thumbnail_url: string | null } | null;
 };
 
@@ -19,6 +20,7 @@ type Tournament = {
     name: string;
     slug: string;
     albums_count: number;
+    view_count: number;
 };
 
 defineProps<{
@@ -76,11 +78,15 @@ const isAuthenticated = !!page.props.auth?.user;
                     <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
                         <FolderOpen class="h-6 w-6" />
                     </div>
-                    <div class="min-w-0">
+                    <div class="min-w-0 flex-1">
                         <p class="truncate font-medium">{{ tournament.name }}</p>
                         <p class="text-sm text-muted-foreground">
                             {{ tournament.albums_count }} {{ tournament.albums_count === 1 ? 'game' : 'games' }}
                         </p>
+                    </div>
+                    <div class="flex shrink-0 items-center gap-1 text-sm text-muted-foreground">
+                        <Eye class="h-3.5 w-3.5" />
+                        {{ tournament.view_count }}
                     </div>
                 </Link>
             </div>
@@ -110,10 +116,16 @@ const isAuthenticated = !!page.props.auth?.user;
                     </div>
                     <div class="p-3">
                         <p class="font-medium">vs {{ album.opponent }}</p>
-                        <p class="flex items-center gap-1 text-sm text-muted-foreground">
-                            <CalendarDays class="h-3.5 w-3.5" />
-                            {{ new Date(album.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) }}
-                        </p>
+                        <div class="flex items-center justify-between">
+                            <p class="flex items-center gap-1 text-sm text-muted-foreground">
+                                <CalendarDays class="h-3.5 w-3.5" />
+                                {{ new Date(album.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) }}
+                            </p>
+                            <p class="flex items-center gap-1 text-sm text-muted-foreground">
+                                <Eye class="h-3.5 w-3.5" />
+                                {{ album.view_count }}
+                            </p>
+                        </div>
                     </div>
                 </Link>
             </div>

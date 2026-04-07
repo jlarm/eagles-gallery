@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { Head, Link, setLayoutProps } from '@inertiajs/vue3';
-import { CalendarDays, FolderOpen, Images, Plus } from 'lucide-vue-next';
-import { manage as manageTournament } from '@/actions/App/Http/Controllers/TournamentController';
+import { Head, Link, router, setLayoutProps } from '@inertiajs/vue3';
+import { CalendarDays, FolderOpen, Images, Plus, Trash2 } from 'lucide-vue-next';
+import { manage as manageTournament, destroy as destroyTournament } from '@/actions/App/Http/Controllers/TournamentController';
 import { manage as manageAlbum, create as createAlbum } from '@/actions/App/Http/Controllers/AlbumController';
 import { index as galleryIndex } from '@/actions/App/Http/Controllers/GalleryController';
 import { Button } from '@/components/ui/button';
@@ -29,6 +29,11 @@ setLayoutProps({
         { title: props.tournament.name, href: manageTournament(props.tournament) },
     ],
 });
+
+function deleteTournament() {
+    if (!confirm(`Delete "${props.tournament.name}" and all its games and photos? This cannot be undone.`)) return;
+    router.delete(destroyTournament.url(props.tournament));
+}
 </script>
 
 <template>
@@ -47,12 +52,18 @@ setLayoutProps({
                     </p>
                 </div>
             </div>
-            <Button as-child size="sm">
-                <Link :href="createAlbum()">
-                    <Plus class="mr-1 h-4 w-4" />
-                    Add Game
-                </Link>
-            </Button>
+            <div class="flex items-center gap-2">
+                <Button variant="destructive" size="sm" @click="deleteTournament">
+                    <Trash2 class="mr-1 h-4 w-4" />
+                    Delete Tournament
+                </Button>
+                <Button as-child size="sm">
+                    <Link :href="createAlbum()">
+                        <Plus class="mr-1 h-4 w-4" />
+                        Add Game
+                    </Link>
+                </Button>
+            </div>
         </div>
 
         <div v-if="tournament.albums.length" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

@@ -50,6 +50,18 @@ class AlbumController extends Controller
         ]);
     }
 
+    public function destroy(Album $album): RedirectResponse
+    {
+        $tournamentId = $album->tournament_id;
+        $album->delete();
+
+        if ($tournamentId) {
+            return redirect()->route('tournaments.manage', $tournamentId);
+        }
+
+        return redirect()->route('dashboard');
+    }
+
     public function show(Album $album): Response
     {
         AnalyticsEvent::record(AnalyticsEvent::GAME_VIEW, AnalyticsEvent::TRACKABLE_ALBUM, $album->id);

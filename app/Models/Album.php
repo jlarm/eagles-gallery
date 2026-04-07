@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Support\Facades\Storage;
 
 #[Fillable(['tournament_id', 'opponent', 'date', 'slug'])]
 class Album extends Model
@@ -19,15 +20,25 @@ class Album extends Model
     protected static function booted(): void
     {
         static::deleting(function (Album $album): void {
+            $photos = $album->photos()->get(['id', 'original_path', 'web_path', 'thumbnail_path']);
+
             // Photos are cascade-deleted at DB level so their Eloquent events won't fire.
             // Clean up photo analytics manually before the cascade happens.
             AnalyticsEvent::where('trackable_type', AnalyticsEvent::TRACKABLE_PHOTO)
-                ->whereIn('trackable_id', $album->photos()->pluck('id'))
+                ->whereIn('trackable_id', $photos->pluck('id'))
                 ->delete();
 
             AnalyticsEvent::where('trackable_type', AnalyticsEvent::TRACKABLE_ALBUM)
                 ->where('trackable_id', $album->id)
                 ->delete();
+
+            $paths = $photos->flatMap(fn (Photo $photo) => array_filter([
+                $photo->original_path,
+                $photo->web_path,
+                $photo->thumbnail_path,
+            ]))->all();
+
+            Storage::disk('spaces')->delete($paths);
         });
     }
 

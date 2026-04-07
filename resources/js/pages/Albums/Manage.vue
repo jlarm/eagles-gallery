@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { Head, router, setLayoutProps, usePoll } from '@inertiajs/vue3';
-import { CalendarDays, Eye, ImagePlus, Loader2, Star, Trash2, Upload } from 'lucide-vue-next';
+import { CalendarDays, Eye, FolderX, ImagePlus, Loader2, Star, Trash2, Upload } from 'lucide-vue-next';
 import { computed, ref, watch } from 'vue';
 import { manage as manageAlbum } from '@/actions/App/Http/Controllers/AlbumController';
 import { manage as manageTournament } from '@/actions/App/Http/Controllers/TournamentController';
 import { index as galleryIndex } from '@/actions/App/Http/Controllers/GalleryController';
 import { presign, store as storePhotos, setCover, destroy as destroyPhoto } from '@/actions/App/Http/Controllers/PhotoController';
+import { destroy as destroyAlbum } from '@/actions/App/Http/Controllers/AlbumController';
 import { Button } from '@/components/ui/button';
 
 type Photo = {
@@ -163,6 +164,11 @@ function deletePhoto(photo: Photo) {
     router.delete(destroyPhoto.url({ album: props.album.id, photo: photo.id }));
 }
 
+function deleteAlbum() {
+    if (!confirm(`Delete "vs ${props.album.opponent}" and all its photos? This cannot be undone.`)) return;
+    router.delete(destroyAlbum.url(props.album));
+}
+
 const pendingCount = computed(() => queue.value.filter((i) => i.status === 'pending' || i.status === 'uploading').length);
 </script>
 
@@ -180,10 +186,16 @@ const pendingCount = computed(() => queue.value.filter((i) => i.status === 'pend
                 <h1 class="text-2xl font-semibold tracking-tight">vs {{ album.opponent }}</h1>
                 <p class="text-sm text-muted-foreground">{{ album.photos.length }} photos</p>
             </div>
-            <Button @click="fileInput?.click()">
-                <Upload class="mr-1.5 h-4 w-4" />
-                Upload Photos
-            </Button>
+            <div class="flex items-center gap-2">
+                <Button variant="destructive" @click="deleteAlbum">
+                    <FolderX class="mr-1 h-4 w-4" />
+                    Delete Game
+                </Button>
+                <Button @click="fileInput?.click()">
+                    <Upload class="mr-1.5 h-4 w-4" />
+                    Upload Photos
+                </Button>
+            </div>
         </div>
 
         <input

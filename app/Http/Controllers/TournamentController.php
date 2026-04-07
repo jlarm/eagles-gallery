@@ -36,6 +36,13 @@ class TournamentController extends Controller
         ]);
     }
 
+    public function destroy(Tournament $tournament): RedirectResponse
+    {
+        $tournament->delete();
+
+        return redirect()->route('dashboard');
+    }
+
     public function show(Tournament $tournament): Response
     {
         AnalyticsEvent::record(AnalyticsEvent::TOURNAMENT_VIEW, AnalyticsEvent::TRACKABLE_TOURNAMENT, $tournament->id);

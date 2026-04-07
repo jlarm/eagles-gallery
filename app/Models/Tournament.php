@@ -20,6 +20,9 @@ class Tournament extends Model
             AnalyticsEvent::where('trackable_type', AnalyticsEvent::TRACKABLE_TOURNAMENT)
                 ->where('trackable_id', $tournament->id)
                 ->delete();
+
+            // Delete via Eloquent so each album's deleting hook fires (file & analytics cleanup).
+            $tournament->albums()->each(fn (Album $album) => $album->delete());
         });
     }
 
