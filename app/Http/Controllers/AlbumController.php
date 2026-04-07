@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreAlbumRequest;
 use App\Models\Album;
+use App\Models\AnalyticsEvent;
 use App\Models\Tournament;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Str;
@@ -30,11 +31,29 @@ class AlbumController extends Controller
             'slug' => Str::slug($validated['opponent'].'-'.$validated['date']),
         ]);
 
-        return redirect()->route('albums.show', $album);
+        return redirect()->route('albums.manage', $album);
+    }
+
+    public function manage(Album $album): Response
+    {
+        $album->load(['tournament', 'coverPhoto']);
+
+        $album->setRelation('photos', $album->photos()->addSelect([
+            'view_count' => AnalyticsEvent::selectRaw('count(*)')
+                ->whereColumn('trackable_id', 'photos.id')
+                ->where('event_type', AnalyticsEvent::PHOTO_VIEW)
+                ->where('trackable_type', AnalyticsEvent::TRACKABLE_PHOTO),
+        ])->get());
+
+        return Inertia::render('Albums/Manage', [
+            'album' => $album,
+        ]);
     }
 
     public function show(Album $album): Response
     {
+        AnalyticsEvent::record(AnalyticsEvent::GAME_VIEW, AnalyticsEvent::TRACKABLE_ALBUM, $album->id);
+
         return Inertia::render('Albums/Show', [
             'album' => $album->load(['tournament', 'photos', 'coverPhoto']),
         ]);

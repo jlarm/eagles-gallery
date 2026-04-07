@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { Head, Link, usePage } from '@inertiajs/vue3';
 import { CalendarDays, FolderOpen, Images, LogIn } from 'lucide-vue-next';
-import { show as showTournament } from '@/actions/App/Http/Controllers/TournamentController';
 import { show as showAlbum } from '@/actions/App/Http/Controllers/AlbumController';
+import { show as showTournament } from '@/actions/App/Http/Controllers/TournamentController';
 import { login, dashboard } from '@/routes';
 
 type Album = {
@@ -25,7 +25,6 @@ defineProps<{
     standaloneAlbums: Album[];
 }>();
 
-defineOptions({ layout: null });
 
 const page = usePage();
 const isAuthenticated = !!page.props.auth?.user;
@@ -71,10 +70,9 @@ function formatDate(dateStr: string): string {
         <!-- Hero -->
         <div class="relative overflow-hidden px-6 pb-14 pt-16 text-center">
             <!-- Diagonal stripe texture -->
-            <div class="absolute inset-0 opacity-[0.025] [background-image:repeating-linear-gradient(-55deg,#7CBDD8_0px,#7CBDD8_1px,transparent_1px,transparent_28px)]"></div>
+            <div class="absolute inset-0 opacity-[0.025] bg-[repeating-linear-gradient(-55deg,#7CBDD8_0px,#7CBDD8_1px,transparent_1px,transparent_28px)]"></div>
             <!-- Radial glow -->
             <div class="absolute inset-0 [background:radial-gradient(ellipse_70%_50%_at_50%_-10%,rgba(124,189,216,0.1)_0%,transparent_65%)]"></div>
-
             <div class="relative flex flex-col items-center">
                 <img
                     src="/eagles-logo.png"
@@ -88,9 +86,9 @@ function formatDate(dateStr: string): string {
                     Game Photo Gallery
                 </p>
                 <div class="mt-6 flex items-center gap-3">
-                    <div class="h-px w-16 bg-gradient-to-r from-transparent to-eagle-blue/30"></div>
+                    <div class="h-px w-16 bg-linear-to-r from-transparent to-eagle-blue/30"></div>
                     <div class="size-1.5 rounded-full bg-eagle-blue/50"></div>
-                    <div class="h-px w-16 bg-gradient-to-l from-transparent to-eagle-blue/30"></div>
+                    <div class="h-px w-16 bg-linear-to-l from-transparent to-eagle-blue/30"></div>
                 </div>
                 <p class="mt-4 max-w-sm text-sm font-light text-muted-foreground">
                     Browse game photos. Click any photo to view full size and download.
@@ -162,7 +160,7 @@ function formatDate(dateStr: string): string {
                             <div v-else class="flex h-full items-center justify-center">
                                 <Images class="size-10 text-eagle-border" />
                             </div>
-                            <div class="absolute inset-0 bg-gradient-to-t from-eagle-card/80 to-transparent"></div>
+                            <div class="absolute inset-0 bg-linear-to-t from-eagle-card/80 to-transparent"></div>
                         </div>
                         <div class="p-4">
                             <p class="font-medium text-eagle-text">vs {{ album.opponent }}</p>

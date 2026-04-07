@@ -7,6 +7,7 @@ use App\Http\Requests\ReorderPhotosRequest;
 use App\Http\Requests\StorePhotosRequest;
 use App\Jobs\ProcessUploadedPhoto;
 use App\Models\Album;
+use App\Models\AnalyticsEvent;
 use App\Models\Photo;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -47,7 +48,7 @@ class PhotoController extends Controller
             }
         });
 
-        return redirect()->route('albums.show', $album);
+        return redirect()->route('albums.manage', $album);
     }
 
     public function store(StorePhotosRequest $request, Album $album): RedirectResponse
@@ -61,7 +62,7 @@ class PhotoController extends Controller
             ProcessUploadedPhoto::dispatch($photo);
         }
 
-        return redirect()->route('albums.show', $album);
+        return redirect()->route('albums.manage', $album);
     }
 
     public function reorder(ReorderPhotosRequest $request, Album $album): RedirectResponse
@@ -72,7 +73,7 @@ class PhotoController extends Controller
             }
         });
 
-        return redirect()->route('albums.show', $album);
+        return redirect()->route('albums.manage', $album);
     }
 
     public function destroy(Album $album, Photo $photo): RedirectResponse
@@ -89,13 +90,15 @@ class PhotoController extends Controller
 
         Storage::disk('spaces')->delete($paths);
 
-        return redirect()->route('albums.show', $album);
+        return redirect()->route('albums.manage', $album);
     }
 
     public function download(Album $album, Photo $photo): RedirectResponse
     {
         abort_unless($photo->album_id === $album->id, 404);
         abort_unless($photo->isProcessed(), 404);
+
+        AnalyticsEvent::record(AnalyticsEvent::DOWNLOAD, AnalyticsEvent::TRACKABLE_PHOTO, $photo->id);
 
         $url = Storage::disk('spaces')->temporaryUrl(
             $photo->web_path,

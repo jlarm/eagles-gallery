@@ -16,6 +16,21 @@ class Album extends Model
     /** @use HasFactory<AlbumFactory> */
     use HasFactory;
 
+    protected static function booted(): void
+    {
+        static::deleting(function (Album $album): void {
+            // Photos are cascade-deleted at DB level so their Eloquent events won't fire.
+            // Clean up photo analytics manually before the cascade happens.
+            AnalyticsEvent::where('trackable_type', AnalyticsEvent::TRACKABLE_PHOTO)
+                ->whereIn('trackable_id', $album->photos()->pluck('id'))
+                ->delete();
+
+            AnalyticsEvent::where('trackable_type', AnalyticsEvent::TRACKABLE_ALBUM)
+                ->where('trackable_id', $album->id)
+                ->delete();
+        });
+    }
+
     protected function casts(): array
     {
         return [

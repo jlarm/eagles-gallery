@@ -30,9 +30,18 @@
             }
         </style>
 
-        <link rel="icon" href="/favicon.ico" sizes="any">
-        <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+        <link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32">
+        <link rel="icon" href="/favicon-16.png" type="image/png" sizes="16x16">
         <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+
+        <meta property="og:title" content="{{ config('app.name', 'Eagles Gallery') }}">
+        <meta property="og:image" content="{{ secure_url('/eagles-logo.png') }}">
+        <meta property="og:image:type" content="image/png">
+        <meta property="og:image:width" content="468">
+        <meta property="og:image:height" content="367">
+        <meta property="og:type" content="website">
+        <meta name="twitter:card" content="summary">
+        <meta name="twitter:image" content="{{ secure_url('/eagles-logo.png') }}">
 
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600" rel="stylesheet" />

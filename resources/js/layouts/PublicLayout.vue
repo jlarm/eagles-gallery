@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { Head, Link, usePage } from '@inertiajs/vue3';
-import { LogIn } from 'lucide-vue-next';
-import { home, login, dashboard } from '@/routes';
+import { home, dashboard } from '@/routes';
 
 const page = usePage();
 const isAuthenticated = !!page.props.auth?.user;
@@ -26,14 +25,6 @@ const isAuthenticated = !!page.props.auth?.user;
                 class="text-xs tracking-wider text-eagle-blue hover:text-eagle-text transition-colors"
             >
                 Dashboard →
-            </Link>
-            <Link
-                v-else
-                :href="login()"
-                class="flex items-center gap-1.5 text-xs tracking-wider text-eagle-muted hover:text-eagle-text transition-colors"
-            >
-                <LogIn class="size-3.5" />
-                Admin
             </Link>
         </nav>
 

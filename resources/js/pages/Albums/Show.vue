@@ -3,6 +3,7 @@ import { Head, Link, usePoll } from '@inertiajs/vue3';
 import { ArrowLeft, CalendarDays, Download, ImagePlus, Loader2, X } from 'lucide-vue-next';
 import { computed, ref, watch } from 'vue';
 import { download as downloadPhoto } from '@/actions/App/Http/Controllers/PhotoController';
+import { track as trackAnalytics } from '@/actions/App/Http/Controllers/AnalyticsController';
 import { show as showTournament } from '@/actions/App/Http/Controllers/TournamentController';
 import { home } from '@/routes';
 import PublicLayout from '@/layouts/PublicLayout.vue';
@@ -49,6 +50,20 @@ watch(
 );
 
 const lightboxPhoto = ref<Photo | null>(null);
+
+function openLightbox(photo: Photo) {
+    lightboxPhoto.value = photo;
+    fetch(trackAnalytics.url(), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-XSRF-TOKEN': getXsrfToken() },
+        body: JSON.stringify({ event_type: 'photo_view', trackable_id: photo.id }),
+    }).catch(() => {});
+}
+
+function getXsrfToken(): string {
+    const match = document.cookie.match(/XSRF-TOKEN=([^;]+)/);
+    return match ? decodeURIComponent(match[1]) : '';
+}
 
 function openNext() {
     if (!lightboxPhoto.value) return;
@@ -112,7 +127,7 @@ function onLightboxKeydown(e: KeyboardEvent) {
                 :key="photo.id"
                 type="button"
                 class="group relative aspect-square overflow-hidden rounded-lg bg-muted"
-                @click="lightboxPhoto = photo"
+                @click="openLightbox(photo)"
             >
                 <img
                     v-if="photo.thumbnail_url"

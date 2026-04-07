@@ -65,7 +65,7 @@ it('creates photo records and dispatches processing jobs after direct upload', f
 
     $this->actingAs(User::factory()->create())
         ->post("/albums/{$album->id}/photos", ['photos' => $confirmed])
-        ->assertRedirect("/albums/{$album->id}");
+        ->assertRedirect("/manage/albums/{$album->id}");
 
     expect(Photo::count())->toBe(2);
 
@@ -111,7 +111,7 @@ it('updates sort_order for each photo in the given sequence', function () {
 
     $this->actingAs(User::factory()->create())
         ->post("/albums/{$album->id}/photos/reorder", ['ids' => [$c->id, $a->id, $b->id]])
-        ->assertRedirect("/albums/{$album->id}");
+        ->assertRedirect("/manage/albums/{$album->id}");
 
     expect($c->fresh()->sort_order)->toBe(0);
     expect($a->fresh()->sort_order)->toBe(1);
@@ -125,7 +125,7 @@ it('ignores ids that do not belong to the album', function () {
 
     $this->actingAs(User::factory()->create())
         ->post("/albums/{$album->id}/photos/reorder", ['ids' => [$other->id, $photo->id]])
-        ->assertRedirect("/albums/{$album->id}");
+        ->assertRedirect("/manage/albums/{$album->id}");
 
     // Other album's photo sort_order should not be touched
     expect($other->fresh()->sort_order)->toBe($other->sort_order);
@@ -155,7 +155,7 @@ it('deletes the photo record and all files from storage', function () {
 
     $this->actingAs(User::factory()->create())
         ->delete("/albums/{$album->id}/photos/{$photo->id}")
-        ->assertRedirect("/albums/{$album->id}");
+        ->assertRedirect("/manage/albums/{$album->id}");
 
     $this->assertModelMissing($photo);
     Storage::disk('spaces')->assertMissing('photos/1/originals/test.jpg');
@@ -175,7 +175,7 @@ it('deletes a photo that only has an original (not yet processed)', function () 
 
     $this->actingAs(User::factory()->create())
         ->delete("/albums/{$album->id}/photos/{$photo->id}")
-        ->assertRedirect("/albums/{$album->id}");
+        ->assertRedirect("/manage/albums/{$album->id}");
 
     $this->assertModelMissing($photo);
     Storage::disk('spaces')->assertMissing('photos/1/originals/test.jpg');

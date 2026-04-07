@@ -1,9 +1,8 @@
 <script setup lang="ts">
 import { Head, Link, usePage } from '@inertiajs/vue3';
 import { CalendarDays, FolderOpen, Images, Plus } from 'lucide-vue-next';
-import { create as createAlbum } from '@/actions/App/Http/Controllers/AlbumController';
-import { create as createTournament, show as showTournament } from '@/actions/App/Http/Controllers/TournamentController';
-import { show as showAlbum } from '@/actions/App/Http/Controllers/AlbumController';
+import { create as createAlbum, manage as manageAlbum } from '@/actions/App/Http/Controllers/AlbumController';
+import { create as createTournament, manage as manageTournament } from '@/actions/App/Http/Controllers/TournamentController';
 import { index as galleryIndex } from '@/actions/App/Http/Controllers/GalleryController';
 import { Button } from '@/components/ui/button';
 
@@ -71,7 +70,7 @@ const isAuthenticated = !!page.props.auth?.user;
                 <Link
                     v-for="tournament in tournaments"
                     :key="tournament.id"
-                    :href="showTournament(tournament)"
+                    :href="manageTournament(tournament)"
                     class="group flex items-center gap-4 rounded-xl border border-sidebar-border/70 p-4 transition-colors hover:bg-muted/50 dark:border-sidebar-border"
                 >
                     <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
@@ -94,7 +93,7 @@ const isAuthenticated = !!page.props.auth?.user;
                 <Link
                     v-for="album in standaloneAlbums"
                     :key="album.id"
-                    :href="showAlbum(album)"
+                    :href="manageAlbum(album)"
                     class="group relative overflow-hidden rounded-xl border border-sidebar-border/70 transition-colors hover:bg-muted/50 dark:border-sidebar-border"
                 >
                     <!-- Cover photo or placeholder -->

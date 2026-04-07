@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\AlbumController;
+use App\Http\Controllers\AnalyticsController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\GalleryController;
 use App\Http\Controllers\PhotoController;
 use App\Http\Controllers\TournamentController;
@@ -10,15 +12,21 @@ Route::get('/', [GalleryController::class, 'home'])->name('home');
 
 Route::get('/gallery', [GalleryController::class, 'index'])->name('gallery.index');
 
+Route::post('/analytics/track', [AnalyticsController::class, 'track'])
+    ->name('analytics.track')
+    ->middleware('throttle:60,1');
+
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::inertia('dashboard', 'Dashboard')->name('dashboard');
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     // Static routes must come before wildcard routes
     Route::get('/tournaments/create', [TournamentController::class, 'create'])->name('tournaments.create');
     Route::post('/tournaments', [TournamentController::class, 'store'])->name('tournaments.store');
+    Route::get('/manage/tournaments/{tournament}', [TournamentController::class, 'manage'])->name('tournaments.manage');
 
     Route::get('/albums/create', [AlbumController::class, 'create'])->name('albums.create');
     Route::post('/albums', [AlbumController::class, 'store'])->name('albums.store');
+    Route::get('/manage/albums/{album}', [AlbumController::class, 'manage'])->name('albums.manage');
 
     Route::post('/albums/{album}/photos/presign', [PhotoController::class, 'presign'])->name('albums.photos.presign');
     Route::post('/albums/{album}/photos/reorder', [PhotoController::class, 'reorder'])->name('albums.photos.reorder');

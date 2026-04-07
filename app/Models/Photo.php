@@ -16,6 +16,15 @@ class Photo extends Model
     /** @use HasFactory<PhotoFactory> */
     use HasFactory;
 
+    protected static function booted(): void
+    {
+        static::deleting(function (Photo $photo): void {
+            AnalyticsEvent::where('trackable_type', AnalyticsEvent::TRACKABLE_PHOTO)
+                ->where('trackable_id', $photo->id)
+                ->delete();
+        });
+    }
+
     /** @var array<string, mixed> */
     protected $attributes = [
         'sort_order' => 0,

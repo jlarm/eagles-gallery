@@ -14,6 +14,15 @@ class Tournament extends Model
     /** @use HasFactory<TournamentFactory> */
     use HasFactory;
 
+    protected static function booted(): void
+    {
+        static::deleting(function (Tournament $tournament): void {
+            AnalyticsEvent::where('trackable_type', AnalyticsEvent::TRACKABLE_TOURNAMENT)
+                ->where('trackable_id', $tournament->id)
+                ->delete();
+        });
+    }
+
     public function albums(): HasMany
     {
         return $this->hasMany(Album::class)->orderBy('date');
