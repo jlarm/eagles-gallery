@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { Head, Link } from '@inertiajs/vue3';
-import { ArrowLeft, CalendarDays, Images } from 'lucide-vue-next';
+import { ArrowLeft, CalendarDays, Check, Images, Link2 } from 'lucide-vue-next';
 import { show as showAlbum } from '@/actions/App/Http/Controllers/AlbumController';
 import { home } from '@/routes';
 import PublicLayout from '@/layouts/PublicLayout.vue';
+import { useCopyLink } from '@/composables/useCopyLink';
 
 type Album = {
     id: number;
@@ -23,12 +24,14 @@ type Tournament = {
 defineProps<{ tournament: Tournament }>();
 
 defineOptions({ layout: PublicLayout });
+
+const { copied, copyLink } = useCopyLink();
 </script>
 
 <template>
     <Head :title="tournament.name" />
 
-    <div class="mx-auto max-w-6xl px-6 py-8">
+    <div class="mx-auto w-full max-w-6xl flex-1 px-6 py-8">
         <Link
             :href="home()"
             class="mb-6 inline-flex items-center gap-1.5 text-sm text-eagle-muted transition-colors hover:text-eagle-text"
@@ -45,6 +48,15 @@ defineOptions({ layout: PublicLayout });
             <span class="shrink-0 text-sm text-eagle-muted">
                 {{ tournament.albums.length }} {{ tournament.albums.length === 1 ? 'game' : 'games' }}
             </span>
+            <button
+                type="button"
+                class="shrink-0 inline-flex items-center gap-1.5 rounded-lg border border-eagle-border bg-eagle-card px-3 py-1.5 text-sm text-eagle-muted transition-colors hover:border-eagle-blue/40 hover:text-eagle-text"
+                @click="copyLink"
+            >
+                <Check v-if="copied" class="size-3.5 text-green-400" />
+                <Link2 v-else class="size-3.5" />
+                {{ copied ? 'Copied!' : 'Copy link' }}
+            </button>
         </div>
 
         <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

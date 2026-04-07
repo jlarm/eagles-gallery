@@ -28,13 +28,13 @@ const isAuthenticated = !!page.props.auth?.user;
             </Link>
         </nav>
 
-        <main class="flex-1">
+        <main class="flex flex-1 flex-col bg-eagle-bg">
             <slot />
         </main>
 
         <footer class="border-t border-eagle-border px-8 py-6 text-center">
             <p class="text-[10px] uppercase tracking-[0.2em] text-eagle-muted/50">
-                Eagles Game Gallery &mdash; All Rights Reserved
+                Eagles Game Gallery &mdash; All Rights Reserved &mdash; <a href="https://joelohr.com" target="_blank">Joe Lohr</a>
             </p>
         </footer>
     </div>

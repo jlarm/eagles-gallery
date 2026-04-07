@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { Head, Link, usePoll } from '@inertiajs/vue3';
-import { ArrowLeft, CalendarDays, Download, ImagePlus, Loader2, X } from 'lucide-vue-next';
+import { ArrowLeft, CalendarDays, Check, Download, ImagePlus, Link2, Loader2, X } from 'lucide-vue-next';
 import { computed, ref, watch } from 'vue';
+import { useCopyLink } from '@/composables/useCopyLink';
 import { download as downloadPhoto } from '@/actions/App/Http/Controllers/PhotoController';
 import { track as trackAnalytics } from '@/actions/App/Http/Controllers/AnalyticsController';
 import { show as showTournament } from '@/actions/App/Http/Controllers/TournamentController';
@@ -84,12 +85,14 @@ function onLightboxKeydown(e: KeyboardEvent) {
     else if (e.key === 'ArrowLeft') openPrev();
     else if (e.key === 'Escape') lightboxPhoto.value = null;
 }
+
+const { copied, copyLink } = useCopyLink();
 </script>
 
 <template>
     <Head :title="`vs ${album.opponent}`" />
 
-    <div class="mx-auto flex max-w-6xl flex-col gap-6 px-6 py-8">
+    <div class="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-6 py-8">
         <!-- Back -->
         <Link
             :href="album.tournament ? showTournament(album.tournament) : home()"
@@ -105,9 +108,20 @@ function onLightboxKeydown(e: KeyboardEvent) {
                 <CalendarDays class="size-3.5" />
                 {{ new Date(album.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) }}
             </p>
-            <h1 class="mt-1 font-display text-[clamp(1.75rem,5vw,2.5rem)] tracking-[0.08em] text-eagle-text">
-                vs {{ album.opponent }}
-            </h1>
+            <div class="mt-1 flex items-center gap-4">
+                <h1 class="font-display text-[clamp(1.75rem,5vw,2.5rem)] tracking-[0.08em] text-eagle-text">
+                    vs {{ album.opponent }}
+                </h1>
+                <button
+                    type="button"
+                    class="inline-flex items-center gap-1.5 rounded-lg border border-eagle-border bg-eagle-card px-3 py-1.5 text-sm text-eagle-muted transition-colors hover:border-eagle-blue/40 hover:text-eagle-text"
+                    @click="copyLink"
+                >
+                    <Check v-if="copied" class="size-3.5 text-green-400" />
+                    <Link2 v-else class="size-3.5" />
+                    {{ copied ? 'Copied!' : 'Copy link' }}
+                </button>
+            </div>
             <p class="text-sm text-eagle-muted">{{ album.photos.length }} photos — click to view &amp; download</p>
         </div>
 
