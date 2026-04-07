@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { Head, Link, router, usePage } from '@inertiajs/vue3';
-import { CalendarDays, CheckCircle2, ImagePlus, Loader2, Star, Trash2, Upload, X, XCircle } from 'lucide-vue-next';
-import { ref, watch } from 'vue';
+import { Head, Link, router, usePage, usePoll } from '@inertiajs/vue3';
+import { CalendarDays, CheckCircle2, ImagePlus, Loader2, Plus, Star, Trash2, Upload, X } from 'lucide-vue-next';
+import { computed, ref, watch } from 'vue';
 import { destroy as destroyPhoto, presign as presignAction, reorder as reorderAction, setCover, store as storeAction } from '@/actions/App/Http/Controllers/PhotoController';
 import { show as showTournament } from '@/actions/App/Http/Controllers/TournamentController';
 import { index as galleryIndex } from '@/actions/App/Http/Controllers/GalleryController';
@@ -53,6 +53,11 @@ const fileInput = ref<HTMLInputElement | null>(null);
 const uploadItems = ref<UploadItem[]>([]);
 const isUploading = ref(false);
 
+function formatSize(bytes: number): string {
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(0) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+}
+
 function onFileSelect(event: Event) {
     addFiles(Array.from((event.target as HTMLInputElement).files ?? []));
     if (fileInput.value) fileInput.value.value = '';
@@ -81,6 +86,11 @@ function addFiles(files: File[]) {
 function removeItem(index: number) {
     URL.revokeObjectURL(uploadItems.value[index].preview);
     uploadItems.value.splice(index, 1);
+}
+
+function clearAll() {
+    uploadItems.value.forEach((item) => URL.revokeObjectURL(item.preview));
+    uploadItems.value = [];
 }
 
 function getXsrfToken(): string {
@@ -141,7 +151,6 @@ async function startUpload() {
 
     isUploading.value = true;
 
-    // Process all files concurrently
     await Promise.all(
         uploadItems.value.map(async (item) => {
             try {
@@ -185,6 +194,24 @@ async function startUpload() {
         isUploading.value = false;
     }
 }
+
+// Poll for processing completion
+const hasUnprocessed = computed(() => props.album.photos.some((p) => !p.thumbnail_url));
+
+const { start: startPolling, stop: stopPolling } = usePoll(
+    3000,
+    { only: ['album'] },
+    { autoStart: false },
+);
+
+watch(
+    hasUnprocessed,
+    (unprocessed) => {
+        if (unprocessed) startPolling();
+        else stopPolling();
+    },
+    { immediate: true },
+);
 
 // Delete
 function confirmDelete(photo: Photo) {
@@ -259,100 +286,145 @@ const lightboxPhoto = ref<Photo | null>(null);
         </div>
 
         <!-- Upload zone (auth only) -->
-        <div
-            v-if="isAuthenticated"
-            class="rounded-xl border border-dashed border-sidebar-border/70 dark:border-sidebar-border"
-        >
-            <!-- Drop target -->
+        <div v-if="isAuthenticated">
+            <!-- Empty drop target (no files queued) -->
             <div
-                class="flex cursor-pointer flex-col items-center gap-3 p-6 transition-colors"
-                :class="isDragging ? 'bg-primary/5' : ''"
+                v-if="!uploadItems.length"
+                class="rounded-xl border border-dashed border-border"
                 @dragover.prevent="isDragging = true"
                 @dragleave="isDragging = false"
                 @drop.prevent="onDrop"
-                @click="fileInput?.click()"
             >
-                <Upload class="h-8 w-8 text-muted-foreground" />
-                <div class="text-center">
-                    <p class="text-sm font-medium">
-                        Drag photos here or <span class="text-primary underline underline-offset-2">browse</span>
-                    </p>
-                    <p class="mt-0.5 text-xs text-muted-foreground">JPG, PNG, WEBP — uploaded directly to storage</p>
+                <div
+                    class="flex cursor-pointer flex-col items-center gap-3 p-6 transition-colors"
+                    :class="isDragging ? 'bg-primary/5' : ''"
+                    @click="fileInput?.click()"
+                >
+                    <Upload class="h-8 w-8 text-muted-foreground" />
+                    <div class="text-center">
+                        <p class="text-sm font-medium">
+                            Drag photos here or <span class="text-primary underline underline-offset-2">browse</span>
+                        </p>
+                        <p class="mt-0.5 text-xs text-muted-foreground">JPG, PNG, WEBP — uploaded directly to storage</p>
+                    </div>
                 </div>
-                <input
-                    ref="fileInput"
-                    type="file"
-                    multiple
-                    accept="image/jpeg,image/png,image/webp"
-                    class="hidden"
-                    @change="onFileSelect"
-                />
             </div>
 
-            <!-- Queue -->
-            <div
-                v-if="uploadItems.length"
-                class="border-t border-sidebar-border/70 p-4 dark:border-sidebar-border"
-            >
-                <div class="mb-3 space-y-2">
-                    <div
-                        v-for="(item, index) in uploadItems"
-                        :key="index"
-                        class="flex items-center gap-3 rounded-lg border border-sidebar-border/50 p-2 dark:border-sidebar-border"
-                    >
-                        <!-- Preview -->
-                        <div class="h-10 w-10 shrink-0 overflow-hidden rounded-md bg-muted">
-                            <img :src="item.preview" :alt="item.file.name" class="h-full w-full object-cover" />
-                        </div>
-
-                        <!-- Info + progress -->
-                        <div class="min-w-0 flex-1">
-                            <p class="truncate text-sm font-medium">{{ item.file.name }}</p>
-                            <div class="mt-1 h-1.5 overflow-hidden rounded-full bg-muted">
-                                <div
-                                    class="h-full rounded-full transition-all duration-300"
-                                    :class="{
-                                        'bg-primary': item.status === 'uploading',
-                                        'bg-green-500': item.status === 'done',
-                                        'bg-destructive': item.status === 'error',
-                                        'bg-muted-foreground/30': item.status === 'pending' || item.status === 'presigning',
-                                    }"
-                                    :style="{ width: item.status === 'done' ? '100%' : `${item.progress}%` }"
-                                />
-                            </div>
-                            <p v-if="item.errorMessage" class="mt-0.5 truncate text-xs text-destructive">
-                                {{ item.errorMessage }}
-                            </p>
-                        </div>
-
-                        <!-- Status icon -->
-                        <div class="shrink-0 text-muted-foreground">
-                            <CheckCircle2 v-if="item.status === 'done'" class="h-4 w-4 text-green-500" />
-                            <XCircle v-else-if="item.status === 'error'" class="h-4 w-4 text-destructive" />
-                            <Loader2 v-else-if="item.status === 'presigning' || item.status === 'uploading'" class="h-4 w-4 animate-spin" />
-                            <button
-                                v-else
-                                type="button"
-                                class="rounded-full p-0.5 hover:bg-muted"
-                                @click.stop="removeItem(index)"
-                            >
-                                <X class="h-4 w-4" />
-                            </button>
-                        </div>
+            <!-- File queue card grid -->
+            <div v-else class="rounded-xl border border-border">
+                <!-- Queue header -->
+                <div class="flex items-center justify-between border-b border-border px-4 py-3">
+                    <p class="text-sm font-medium">Files ({{ uploadItems.length }})</p>
+                    <div class="flex items-center gap-2">
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            :disabled="isUploading"
+                            @click="fileInput?.click()"
+                        >
+                            <Plus class="h-3.5 w-3.5" />
+                            Add files
+                        </Button>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            :disabled="isUploading"
+                            @click="clearAll"
+                        >
+                            Remove all
+                        </Button>
+                        <Button
+                            size="sm"
+                            :disabled="isUploading"
+                            @click="startUpload"
+                        >
+                            <Loader2 v-if="isUploading" class="h-3.5 w-3.5 animate-spin" />
+                            <Upload v-else class="h-3.5 w-3.5" />
+                            {{ isUploading ? 'Uploading…' : 'Upload' }}
+                        </Button>
                     </div>
                 </div>
 
-                <div class="flex items-center justify-between">
-                    <p class="text-sm text-muted-foreground">
-                        {{ uploadItems.length }} file{{ uploadItems.length === 1 ? '' : 's' }} queued
-                    </p>
-                    <Button size="sm" :disabled="isUploading" @click="startUpload">
-                        <Loader2 v-if="isUploading" class="mr-2 h-4 w-4 animate-spin" />
-                        <ImagePlus v-else class="mr-2 h-4 w-4" />
-                        {{ isUploading ? 'Uploading...' : 'Upload' }}
-                    </Button>
+                <!-- Cards -->
+                <div class="grid grid-cols-3 gap-3 p-4 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6">
+                    <div
+                        v-for="(item, index) in uploadItems"
+                        :key="index"
+                        class="relative overflow-hidden rounded-lg border border-border bg-card"
+                    >
+                        <!-- Thumbnail -->
+                        <div class="relative aspect-square overflow-hidden bg-muted">
+                            <img
+                                :src="item.preview"
+                                :alt="item.file.name"
+                                class="h-full w-full object-cover"
+                            />
+
+                            <!-- Done overlay -->
+                            <div
+                                v-if="item.status === 'done'"
+                                class="absolute inset-0 flex items-center justify-center bg-green-500/20"
+                            >
+                                <CheckCircle2 class="h-8 w-8 text-green-600" />
+                            </div>
+
+                            <!-- Remove button -->
+                            <button
+                                v-if="!isUploading || item.status === 'error'"
+                                type="button"
+                                class="absolute right-1.5 top-1.5 rounded-full bg-black/50 p-0.5 text-white/80 hover:bg-black/70 hover:text-white"
+                                @click="removeItem(index)"
+                            >
+                                <X class="h-3 w-3" />
+                            </button>
+                        </div>
+
+                        <!-- Info -->
+                        <div class="p-2">
+                            <p class="truncate text-xs font-medium leading-tight">{{ item.file.name }}</p>
+                            <p class="mt-0.5 text-xs text-muted-foreground">{{ formatSize(item.file.size) }}</p>
+
+                            <!-- Progress bar -->
+                            <template v-if="item.status !== 'pending' && item.status !== 'error'">
+                                <div class="mt-1.5 h-1 overflow-hidden rounded-full bg-muted">
+                                    <div
+                                        class="h-full rounded-full transition-all duration-300"
+                                        :class="item.status === 'done' ? 'bg-green-500' : 'bg-amber-400'"
+                                        :style="{ width: item.status === 'done' ? '100%' : `${item.progress}%` }"
+                                    />
+                                </div>
+                                <p class="mt-0.5 text-xs text-muted-foreground">
+                                    <span v-if="item.status === 'presigning'">Preparing…</span>
+                                    <span v-else-if="item.status === 'done'">Done</span>
+                                    <span v-else>{{ item.progress }}%</span>
+                                </p>
+                            </template>
+
+                            <p v-if="item.errorMessage" class="mt-1 truncate text-xs text-destructive">
+                                {{ item.errorMessage }}
+                            </p>
+                        </div>
+                    </div>
                 </div>
             </div>
+
+            <input
+                ref="fileInput"
+                type="file"
+                multiple
+                accept="image/jpeg,image/png,image/webp"
+                class="hidden"
+                @change="onFileSelect"
+            />
+        </div>
+
+        <!-- Processing banner -->
+        <div
+            v-if="isAuthenticated && hasUnprocessed && !uploadItems.length"
+            class="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm text-amber-800"
+        >
+            <Loader2 class="h-4 w-4 shrink-0 animate-spin" />
+            Converting photos to web and thumbnail sizes…
         </div>
 
         <!-- Photo grid -->
@@ -378,8 +450,9 @@ const lightboxPhoto = ref<Photo | null>(null);
                         :alt="photo.filename"
                         class="h-full w-full object-cover transition-transform duration-200 group-hover:scale-105"
                     />
-                    <div v-else class="flex h-full items-center justify-center">
+                    <div v-else class="flex h-full flex-col items-center justify-center gap-1.5">
                         <Loader2 class="h-6 w-6 animate-spin text-muted-foreground" />
+                        <span class="text-xs text-muted-foreground">Processing…</span>
                     </div>
                 </button>
 
