@@ -19,6 +19,8 @@ class CreateNewUser implements CreatesNewUsers
      */
     public function create(array $input): User
     {
+        abort_if(User::exists(), 403, 'Registration is disabled.');
+
         Validator::make($input, [
             ...$this->profileRules(),
             'password' => $this->passwordRules(),
