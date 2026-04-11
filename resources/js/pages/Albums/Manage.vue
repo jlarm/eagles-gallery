@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { Head, router, setLayoutProps, usePoll } from '@inertiajs/vue3';
-import { CalendarDays, Eye, FolderX, ImagePlus, Loader2, Star, Trash2, Upload } from 'lucide-vue-next';
-import { computed, ref, watch } from 'vue';
+import { CalendarDays, Eye, FolderX, GripVertical, ImagePlus, Loader2, Star, Trash2, Upload } from 'lucide-vue-next';
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import { manage as manageAlbum } from '@/actions/App/Http/Controllers/AlbumController';
 import { manage as manageTournament } from '@/actions/App/Http/Controllers/TournamentController';
 import { index as galleryIndex } from '@/actions/App/Http/Controllers/GalleryController';
-import { presign, store as storePhotos, setCover, destroy as destroyPhoto } from '@/actions/App/Http/Controllers/PhotoController';
+import { presign, store as storePhotos, setCover, destroy as destroyPhoto, reorder as reorderPhotos } from '@/actions/App/Http/Controllers/PhotoController';
 import { destroy as destroyAlbum } from '@/actions/App/Http/Controllers/AlbumController';
 import { Button } from '@/components/ui/button';
 
@@ -73,34 +73,49 @@ const queue = ref<QueueItem[]>([]);
 const uploading = ref(false);
 const fileInput = ref<HTMLInputElement | null>(null);
 
-// Drag and drop
+// File drag-and-drop (OS → page)
 const dragDepth = ref(0);
-const isDraggingOver = computed(() => dragDepth.value > 0);
+const isDraggingFiles = computed(() => dragDepth.value > 0 && dragSourceId.value === null);
 
-function onDragEnter(e: DragEvent) {
+function onWindowDragEnter(e: DragEvent) {
     if (!e.dataTransfer?.types.includes('Files')) return;
     dragDepth.value++;
 }
 
-function onDragLeave() {
-    dragDepth.value = Math.max(0, dragDepth.value - 1);
+function onWindowDragLeave(e: DragEvent) {
+    // Only decrement when leaving the window entirely
+    if (e.relatedTarget === null) dragDepth.value = 0;
 }
 
-function onDragOver(e: DragEvent) {
+function onWindowDragOver(e: DragEvent) {
     if (!e.dataTransfer?.types.includes('Files')) return;
     e.preventDefault();
-    e.dataTransfer.dropEffect = 'copy';
 }
 
-function onDrop(e: DragEvent) {
+function onWindowDrop(e: DragEvent) {
     e.preventDefault();
     dragDepth.value = 0;
+    if (dragSourceId.value !== null) return; // reorder drop, not a file drop
 
     const files = Array.from(e.dataTransfer?.files ?? []).filter((f) => f.type.startsWith('image/'));
     if (!files.length) return;
 
     enqueueFiles(files);
 }
+
+onMounted(() => {
+    window.addEventListener('dragenter', onWindowDragEnter);
+    window.addEventListener('dragleave', onWindowDragLeave);
+    window.addEventListener('dragover', onWindowDragOver);
+    window.addEventListener('drop', onWindowDrop);
+});
+
+onUnmounted(() => {
+    window.removeEventListener('dragenter', onWindowDragEnter);
+    window.removeEventListener('dragleave', onWindowDragLeave);
+    window.removeEventListener('dragover', onWindowDragOver);
+    window.removeEventListener('drop', onWindowDrop);
+})
 
 function onFilesSelected(event: Event) {
     const input = event.target as HTMLInputElement;
@@ -208,19 +223,55 @@ function deleteAlbum() {
 }
 
 const pendingCount = computed(() => queue.value.filter((i) => i.status === 'pending' || i.status === 'uploading').length);
+
+// Photo grid reordering
+const orderedPhotos = ref<Photo[]>([...props.album.photos]);
+const dragSourceId = ref<number | null>(null);
+const dragOverId = ref<number | null>(null);
+
+watch(
+    () => props.album.photos,
+    (photos) => {
+        orderedPhotos.value = [...photos];
+    },
+);
+
+function onPhotoDragStart(photo: Photo) {
+    dragSourceId.value = photo.id;
+}
+
+function onPhotoDragEnter(photo: Photo) {
+    if (dragSourceId.value === null || dragSourceId.value === photo.id) return;
+    dragOverId.value = photo.id;
+
+    const from = orderedPhotos.value.findIndex((p) => p.id === dragSourceId.value);
+    const to = orderedPhotos.value.findIndex((p) => p.id === photo.id);
+    if (from === -1 || to === -1) return;
+
+    const reordered = [...orderedPhotos.value];
+    reordered.splice(to, 0, reordered.splice(from, 1)[0]);
+    orderedPhotos.value = reordered;
+}
+
+function onPhotoDragEnd() {
+    if (dragSourceId.value === null) return;
+
+    dragOverId.value = null;
+    dragSourceId.value = null;
+
+    router.post(
+        reorderPhotos.url({ album: props.album.id }),
+        { ids: orderedPhotos.value.map((p) => p.id) },
+        { preserveScroll: true },
+    );
+}
 </script>
 
 <template>
     <Head :title="`Manage — vs ${album.opponent}`" />
 
-    <div
-        class="relative flex flex-col gap-6 p-4"
-        @dragenter="onDragEnter"
-        @dragleave="onDragLeave"
-        @dragover="onDragOver"
-        @drop="onDrop"
-    >
-        <!-- Drag overlay -->
+    <!-- Full-screen file drop overlay -->
+    <Teleport to="body">
         <Transition
             enter-active-class="transition-opacity duration-150"
             leave-active-class="transition-opacity duration-150"
@@ -228,13 +279,16 @@ const pendingCount = computed(() => queue.value.filter((i) => i.status === 'pend
             leave-to-class="opacity-0"
         >
             <div
-                v-if="isDraggingOver"
-                class="pointer-events-none absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-primary bg-primary/5"
+                v-if="isDraggingFiles"
+                class="pointer-events-none fixed inset-0 z-50 flex flex-col items-center justify-center gap-3 border-4 border-dashed border-primary bg-background/90"
             >
-                <Upload class="h-10 w-10 text-primary" />
-                <p class="text-base font-medium text-primary">Drop photos to upload</p>
+                <Upload class="h-12 w-12 text-primary" />
+                <p class="text-lg font-semibold text-primary">Drop photos to upload</p>
             </div>
         </Transition>
+    </Teleport>
+
+    <div class="flex flex-col gap-6 p-4">
 
         <!-- Header -->
         <div class="flex items-center justify-between">
@@ -321,12 +375,29 @@ const pendingCount = computed(() => queue.value.filter((i) => i.status === 'pend
             </div>
         </div>
 
+        <!-- Persistent upload drop zone -->
+        <button
+            v-if="album.photos.length"
+            type="button"
+            class="flex w-full cursor-pointer flex-col items-center gap-2 rounded-xl border-2 border-dashed border-border px-4 py-8 text-muted-foreground transition-colors hover:border-primary/50 hover:bg-primary/5 hover:text-primary"
+            @click="fileInput?.click()"
+        >
+            <Upload class="h-6 w-6" />
+            <span class="text-sm font-medium">Drop photos here or click to upload more</span>
+        </button>
+
         <!-- Photo grid -->
         <div v-if="album.photos.length" class="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
             <div
-                v-for="photo in album.photos"
+                v-for="photo in orderedPhotos"
                 :key="photo.id"
+                draggable="true"
                 class="group relative aspect-square overflow-hidden rounded-lg bg-muted"
+                :class="{ 'opacity-40 ring-2 ring-primary': photo.id === dragSourceId }"
+                @dragstart="onPhotoDragStart(photo)"
+                @dragenter.prevent="onPhotoDragEnter(photo)"
+                @dragover.prevent
+                @dragend="onPhotoDragEnd"
             >
                 <img
                     v-if="photo.thumbnail_url"
@@ -339,10 +410,15 @@ const pendingCount = computed(() => queue.value.filter((i) => i.status === 'pend
                     <span class="text-xs text-muted-foreground">Processing…</span>
                 </div>
 
+                <!-- Drag handle -->
+                <div class="absolute left-1.5 top-1.5 cursor-grab rounded-md bg-black/50 p-1 text-white opacity-0 transition-opacity group-hover:opacity-100 active:cursor-grabbing">
+                    <GripVertical class="h-3.5 w-3.5" />
+                </div>
+
                 <!-- Cover badge -->
                 <div
                     v-if="photo.is_cover"
-                    class="absolute left-1.5 top-1.5 rounded-full bg-amber-500 px-1.5 py-0.5 text-xs font-medium text-white"
+                    class="absolute right-1.5 top-1.5 rounded-full bg-amber-500 px-1.5 py-0.5 text-xs font-medium text-white"
                 >
                     Cover
                 </div>
