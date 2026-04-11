@@ -73,15 +73,46 @@ const queue = ref<QueueItem[]>([]);
 const uploading = ref(false);
 const fileInput = ref<HTMLInputElement | null>(null);
 
+// Drag and drop
+const dragDepth = ref(0);
+const isDraggingOver = computed(() => dragDepth.value > 0);
+
+function onDragEnter(e: DragEvent) {
+    if (!e.dataTransfer?.types.includes('Files')) return;
+    dragDepth.value++;
+}
+
+function onDragLeave() {
+    dragDepth.value = Math.max(0, dragDepth.value - 1);
+}
+
+function onDragOver(e: DragEvent) {
+    if (!e.dataTransfer?.types.includes('Files')) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'copy';
+}
+
+function onDrop(e: DragEvent) {
+    e.preventDefault();
+    dragDepth.value = 0;
+
+    const files = Array.from(e.dataTransfer?.files ?? []).filter((f) => f.type.startsWith('image/'));
+    if (!files.length) return;
+
+    enqueueFiles(files);
+}
+
 function onFilesSelected(event: Event) {
     const input = event.target as HTMLInputElement;
     if (!input.files?.length) return;
+    enqueueFiles(Array.from(input.files));
+    input.value = '';
+}
 
-    for (const file of input.files) {
+function enqueueFiles(files: File[]) {
+    for (const file of files) {
         queue.value.push({ file, status: 'pending', progress: 0 });
     }
-
-    input.value = '';
     processQueue();
 }
 
@@ -182,7 +213,29 @@ const pendingCount = computed(() => queue.value.filter((i) => i.status === 'pend
 <template>
     <Head :title="`Manage — vs ${album.opponent}`" />
 
-    <div class="flex flex-col gap-6 p-4">
+    <div
+        class="relative flex flex-col gap-6 p-4"
+        @dragenter="onDragEnter"
+        @dragleave="onDragLeave"
+        @dragover="onDragOver"
+        @drop="onDrop"
+    >
+        <!-- Drag overlay -->
+        <Transition
+            enter-active-class="transition-opacity duration-150"
+            leave-active-class="transition-opacity duration-150"
+            enter-from-class="opacity-0"
+            leave-to-class="opacity-0"
+        >
+            <div
+                v-if="isDraggingOver"
+                class="pointer-events-none absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-primary bg-primary/5"
+            >
+                <Upload class="h-10 w-10 text-primary" />
+                <p class="text-base font-medium text-primary">Drop photos to upload</p>
+            </div>
+        </Transition>
+
         <!-- Header -->
         <div class="flex items-center justify-between">
             <div>
