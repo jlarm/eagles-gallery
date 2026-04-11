@@ -15,7 +15,6 @@ import {
 } from 'chart.js';
 import { Line, Bar as BarChart2 } from 'vue-chartjs';
 import { computed } from 'vue';
-import { retryFailed, clearFailed, retryStuckPhoto } from '@/actions/App/Http/Controllers/QueueController';
 import { dashboard } from '@/routes';
 import { AlertTriangle, Images, FolderOpen, Download, Eye, RefreshCw, Trash2 } from 'lucide-vue-next';
 
@@ -228,7 +227,7 @@ const barChartOptions = {
                         v-if="queueHealth.failed_jobs.length"
                         type="button"
                         class="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium transition-colors hover:bg-muted"
-                        @click="router.post(retryFailed.url())"
+                        @click="router.post('/queue/retry-failed')"
                     >
                         <RefreshCw class="size-3" />
                         Retry All Failed
@@ -237,7 +236,7 @@ const barChartOptions = {
                         v-if="queueHealth.failed_jobs.length"
                         type="button"
                         class="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium text-destructive transition-colors hover:bg-destructive/10"
-                        @click="router.post(clearFailed.url())"
+                        @click="router.post('/queue/clear-failed')"
                     >
                         <Trash2 class="size-3" />
                         Clear Failed
@@ -261,7 +260,7 @@ const barChartOptions = {
                         <button
                             type="button"
                             class="inline-flex items-center gap-1 text-xs text-primary hover:underline"
-                            @click="router.post(retryStuckPhoto.url({ photo: photo.id }))"
+                            @click="router.post(`/queue/retry-photo/${photo.id}`)"
                         >
                             <RefreshCw class="size-3" />
                             Re-queue

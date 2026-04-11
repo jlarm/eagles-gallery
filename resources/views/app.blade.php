@@ -43,8 +43,9 @@
         <meta name="twitter:card" content="summary">
         <meta name="twitter:image" content="{{ secure_url('/eagles-logo.png') }}">
 
-        <link rel="preconnect" href="https://fonts.bunny.net">
-        <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600" rel="stylesheet" />
+        <link rel="preconnect" href="https://fonts.bunny.net" crossorigin>
+        <link rel="preload" as="font" type="font/woff2" href="https://fonts.bunny.net/bebas-neue/files/bebas-neue-latin-400-normal.woff2" crossorigin>
+        <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600|bebas-neue:400&display=swap" rel="stylesheet" />
 
         @vite(['resources/css/app.css', 'resources/js/app.ts', "resources/js/pages/{$page['component']}.vue"])
         <x-inertia::head>
