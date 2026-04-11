@@ -137,8 +137,12 @@ function uploadToS3(item: QueueItem, url: string, headers: Record<string, string
         const xhr = new XMLHttpRequest();
         xhr.open('PUT', url);
 
+        // Browsers forbid setting certain headers (e.g. Host) — skip them
+        const forbiddenHeaders = new Set(['host', 'content-length', 'connection', 'origin', 'referer']);
         for (const [key, value] of Object.entries(headers)) {
-            xhr.setRequestHeader(key, value);
+            if (!forbiddenHeaders.has(key.toLowerCase())) {
+                xhr.setRequestHeader(key, value);
+            }
         }
 
         xhr.upload.addEventListener('progress', (e) => {

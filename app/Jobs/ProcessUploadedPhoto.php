@@ -26,20 +26,21 @@ class ProcessUploadedPhoto implements ShouldQueue
         $originalContents = Storage::disk('spaces')->get($this->photo->original_path);
 
         $manager = new ImageManager(new Driver);
-        $image = $manager->read($originalContents);
 
         $webPath = $this->variantPath($this->photo->original_path, 'web');
         $thumbnailPath = $this->variantPath($this->photo->original_path, 'thumbnails');
 
-        // Web version: max 1920px wide, maintain aspect ratio
-        $webImage = clone $image;
-        $webImage->scaleDown(width: 1920);
-        Storage::disk('spaces')->put($webPath, $webImage->toJpeg(quality: 85)->toString(), 'public');
-
-        // Thumbnail: max 400px wide, maintain aspect ratio
-        $thumbImage = clone $image;
+        // Thumbnail first — free it before loading the web version
+        $thumbImage = $manager->read($originalContents);
         $thumbImage->scaleDown(width: 400);
         Storage::disk('spaces')->put($thumbnailPath, $thumbImage->toJpeg(quality: 80)->toString(), 'public');
+        unset($thumbImage);
+
+        // Web version — re-read from the already-fetched original
+        $webImage = $manager->read($originalContents);
+        $webImage->scaleDown(width: 1920);
+        Storage::disk('spaces')->put($webPath, $webImage->toJpeg(quality: 85)->toString(), 'public');
+        unset($webImage, $originalContents);
 
         $this->photo->update([
             'web_path' => $webPath,
