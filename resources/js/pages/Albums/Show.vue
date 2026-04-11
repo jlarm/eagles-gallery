@@ -117,7 +117,7 @@ const { copied, copyLink } = useCopyLink();
                 </h1>
                 <button
                     type="button"
-                    class="inline-flex items-center gap-1.5 rounded-lg border border-eagle-border bg-eagle-card px-3 py-1.5 text-sm text-eagle-blue transition-colors hover:border-eagle-blue/40 hover:text-eagle-text"
+                    class="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-eagle-border bg-eagle-card px-3 py-1.5 text-sm text-eagle-blue transition-colors hover:border-eagle-blue/40 hover:text-eagle-text"
                     @click="copyLink"
                 >
                     <Check v-if="copied" class="size-3.5 text-green-400" />
@@ -154,7 +154,7 @@ const { copied, copyLink } = useCopyLink();
                 v-for="photo in album.photos"
                 :key="photo.id"
                 type="button"
-                class="group relative aspect-square overflow-hidden rounded-lg bg-muted"
+                class="group relative aspect-square cursor-pointer overflow-hidden rounded-lg bg-muted"
                 @click="openLightbox(photo)"
             >
                 <img
@@ -191,14 +191,14 @@ const { copied, copyLink } = useCopyLink();
                 <a
                     v-if="lightboxPhoto.web_url"
                     :href="downloadPhoto.url({ album: album.id, photo: lightboxPhoto.id })"
-                    class="flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-sm text-white hover:bg-white/20"
+                    class="flex cursor-pointer items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-sm text-white hover:bg-white/20"
                 >
                     <Download class="size-4" />
                     Download
                 </a>
                 <button
                     type="button"
-                    class="rounded-full bg-white/10 p-2 text-white hover:bg-white/20"
+                    class="cursor-pointer rounded-full bg-white/10 p-2 text-white hover:bg-white/20"
                     @click="lightboxPhoto = null"
                 >
                     <X class="size-5" />
@@ -209,7 +209,7 @@ const { copied, copyLink } = useCopyLink();
             <button
                 v-if="album.photos.indexOf(lightboxPhoto) > 0"
                 type="button"
-                class="absolute left-4 top-1/2 -translate-y-1/2 rounded-full bg-white/10 p-2 text-white hover:bg-white/20"
+                class="absolute left-4 top-1/2 -translate-y-1/2 cursor-pointer rounded-full bg-white/10 p-2 text-white hover:bg-white/20"
                 @click="openPrev"
             >
                 <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
@@ -219,7 +219,7 @@ const { copied, copyLink } = useCopyLink();
             <button
                 v-if="album.photos.indexOf(lightboxPhoto) < album.photos.length - 1"
                 type="button"
-                class="absolute right-4 top-1/2 -translate-y-1/2 rounded-full bg-white/10 p-2 text-white hover:bg-white/20"
+                class="absolute right-4 top-1/2 -translate-y-1/2 cursor-pointer rounded-full bg-white/10 p-2 text-white hover:bg-white/20"
                 @click="openNext"
             >
                 <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>

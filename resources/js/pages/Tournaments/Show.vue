@@ -50,7 +50,7 @@ const { copied, copyLink } = useCopyLink();
             </span>
             <button
                 type="button"
-                class="shrink-0 inline-flex items-center gap-1.5 rounded-lg border border-eagle-border bg-eagle-card px-3 py-1.5 text-sm text-eagle-blue transition-colors hover:border-eagle-blue/40 hover:text-eagle-text"
+                class="inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-lg border border-eagle-border bg-eagle-card px-3 py-1.5 text-sm text-eagle-blue transition-colors hover:border-eagle-blue/40 hover:text-eagle-text"
                 @click="copyLink"
             >
                 <Check v-if="copied" class="size-3.5 text-green-400" />
@@ -64,7 +64,7 @@ const { copied, copyLink } = useCopyLink();
                 v-for="album in tournament.albums"
                 :key="album.id"
                 :href="showAlbum(album)"
-                class="group relative overflow-hidden rounded-xl border border-eagle-border bg-eagle-card transition-all duration-300 hover:border-eagle-blue/30"
+                class="group relative cursor-pointer overflow-hidden rounded-xl border border-eagle-border bg-eagle-card transition-all duration-300 hover:border-eagle-blue/30"
             >
                 <div class="relative aspect-video w-full overflow-hidden bg-eagle-card">
                     <img

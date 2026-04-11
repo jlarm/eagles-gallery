@@ -111,7 +111,7 @@ function formatDate(dateStr: string): string {
                     v-for="tournament in tournaments"
                     :key="tournament.id"
                     :href="showTournament(tournament)"
-                    class="group relative flex items-center gap-4 overflow-hidden rounded-xl border border-eagle-border bg-eagle-card p-5 transition-all duration-300 hover:border-eagle-blue/30 hover:bg-eagle-card-hover"
+                    class="group relative flex cursor-pointer items-center gap-4 overflow-hidden rounded-xl border border-eagle-border bg-eagle-card p-5 transition-all duration-300 hover:border-eagle-blue/30 hover:bg-eagle-card-hover"
                 >
                     <!-- Left accent bar -->
                     <div
@@ -163,7 +163,7 @@ function formatDate(dateStr: string): string {
                     v-for="album in standaloneAlbums"
                     :key="album.id"
                     :href="showAlbum(album)"
-                    class="group relative overflow-hidden rounded-xl border border-eagle-border bg-eagle-card transition-all duration-300 hover:border-eagle-blue/30"
+                    class="group relative cursor-pointer overflow-hidden rounded-xl border border-eagle-border bg-eagle-card transition-all duration-300 hover:border-eagle-blue/30"
                 >
                     <div
                         class="relative aspect-video w-full overflow-hidden bg-eagle-card"
