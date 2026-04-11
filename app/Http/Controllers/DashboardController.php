@@ -111,43 +111,68 @@ class DashboardController extends Controller
     }
 
     /**
-     * @return array{stuck_photos: array<int, array{id: int, filename: string, age_minutes: int}>, failed_jobs: array<int, array{id: int, name: string, failed_at: string, error: string}>}
+     * @return array{
+     *   config: array{queue_connection: string, cache_store: string, db_connection: string},
+     *   stuck_photos: array<int, array{id: int, filename: string, age_minutes: int}>,
+     *   failed_jobs: array<int, array{id: int, name: string, failed_at: string, error: string}>,
+     *   errors: array<int, string>
+     * }
      */
     private function queueHealth(): array
     {
-        $stuckPhotos = Photo::whereNull('thumbnail_path')
-            ->where('created_at', '<', now()->subMinutes(5))
-            ->orderBy('created_at')
-            ->get()
-            ->map(fn (Photo $photo) => [
-                'id' => $photo->id,
-                'filename' => $photo->filename,
-                'age_minutes' => (int) now()->diffInMinutes($photo->created_at),
-            ])
-            ->values()
-            ->all();
+        $errors = [];
 
-        $failedJobs = DB::table('failed_jobs')
-            ->orderByDesc('failed_at')
-            ->limit(10)
-            ->get()
-            ->map(function (object $job) {
-                $payload = json_decode($job->payload, true);
-                $exception = explode("\n", $job->exception)[0];
+        $stuckPhotos = [];
 
-                return [
-                    'id' => $job->id,
-                    'name' => $payload['displayName'] ?? 'Unknown',
-                    'failed_at' => $job->failed_at,
-                    'error' => $exception,
-                ];
-            })
-            ->values()
-            ->all();
+        try {
+            $stuckPhotos = Photo::whereNull('thumbnail_path')
+                ->where('created_at', '<', now()->subMinutes(5))
+                ->orderBy('created_at')
+                ->get()
+                ->map(fn (Photo $photo) => [
+                    'id' => $photo->id,
+                    'filename' => $photo->filename,
+                    'age_minutes' => (int) now()->diffInMinutes($photo->created_at),
+                ])
+                ->values()
+                ->all();
+        } catch (\Throwable $e) {
+            $errors[] = 'Failed to query stuck photos: '.$e->getMessage();
+        }
+
+        $failedJobs = [];
+
+        try {
+            $failedJobs = DB::table('failed_jobs')
+                ->orderByDesc('failed_at')
+                ->limit(10)
+                ->get()
+                ->map(function (object $job) {
+                    $payload = json_decode($job->payload, true);
+                    $exception = explode("\n", $job->exception)[0];
+
+                    return [
+                        'id' => $job->id,
+                        'name' => $payload['displayName'] ?? 'Unknown',
+                        'failed_at' => $job->failed_at,
+                        'error' => $exception,
+                    ];
+                })
+                ->values()
+                ->all();
+        } catch (\Throwable $e) {
+            $errors[] = 'Failed to query failed_jobs table: '.$e->getMessage();
+        }
 
         return [
+            'config' => [
+                'queue_connection' => config('queue.default'),
+                'cache_store' => config('cache.default'),
+                'db_connection' => config('database.default'),
+            ],
             'stuck_photos' => $stuckPhotos,
             'failed_jobs' => $failedJobs,
+            'errors' => $errors,
         ];
     }
 

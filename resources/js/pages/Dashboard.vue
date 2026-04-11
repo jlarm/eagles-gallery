@@ -52,7 +52,8 @@ type TopItem = { id: number; label: string; count: number };
 
 type StuckPhoto = { id: number; filename: string; age_minutes: number };
 type FailedJob = { id: number; name: string; failed_at: string; error: string };
-type QueueHealth = { stuck_photos: StuckPhoto[]; failed_jobs: FailedJob[] };
+type QueueConfig = { queue_connection: string; cache_store: string; db_connection: string };
+type QueueHealth = { config: QueueConfig; stuck_photos: StuckPhoto[]; failed_jobs: FailedJob[]; errors: string[] };
 
 const props = defineProps<{
     stats: StatBlock;
@@ -64,8 +65,18 @@ const props = defineProps<{
 }>();
 
 const hasQueueIssues = computed(() =>
-    props.queueHealth.stuck_photos.length > 0 || props.queueHealth.failed_jobs.length > 0,
+    props.queueHealth.stuck_photos.length > 0 ||
+    props.queueHealth.failed_jobs.length > 0 ||
+    props.queueHealth.errors.length > 0,
 );
+
+const queueConfigMismatch = computed(() => {
+    const { queue_connection, cache_store } = props.queueHealth.config;
+    const warnings = [];
+    if (queue_connection === 'database') warnings.push('QUEUE_CONNECTION=database — jobs go to SQLite, not Redis. Ploi worker will never see them.');
+    if (cache_store === 'database') warnings.push('CACHE_STORE=database — if SQLite is missing on the server, the queue worker will crash on every job.');
+    return warnings;
+});
 
 defineOptions({
     layout: {
@@ -215,18 +226,23 @@ const barChartOptions = {
             </div>
         </div>
 
-        <!-- Queue Health -->
-        <div v-if="hasQueueIssues" class="rounded-xl border border-destructive/30 bg-destructive/5 p-6">
+        <!-- Queue Health — always visible -->
+        <div
+            class="rounded-xl border p-6"
+            :class="hasQueueIssues || queueConfigMismatch.length ? 'border-destructive/30 bg-destructive/5' : 'border-border bg-card'"
+        >
             <div class="mb-4 flex items-center justify-between">
                 <div class="flex items-center gap-2">
-                    <AlertTriangle class="size-4 text-destructive" />
-                    <h2 class="font-semibold text-destructive">Queue Issues</h2>
+                    <AlertTriangle v-if="hasQueueIssues || queueConfigMismatch.length" class="size-4 text-destructive" />
+                    <h2 class="font-semibold" :class="hasQueueIssues || queueConfigMismatch.length ? 'text-destructive' : ''">
+                        Queue Health
+                    </h2>
                 </div>
                 <div class="flex items-center gap-2">
                     <button
                         v-if="queueHealth.failed_jobs.length"
                         type="button"
-                        class="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium transition-colors hover:bg-muted"
+                        class="inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium transition-colors hover:bg-muted"
                         @click="router.post('/queue/retry-failed')"
                     >
                         <RefreshCw class="size-3" />
@@ -235,12 +251,48 @@ const barChartOptions = {
                     <button
                         v-if="queueHealth.failed_jobs.length"
                         type="button"
-                        class="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium text-destructive transition-colors hover:bg-destructive/10"
+                        class="inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium text-destructive transition-colors hover:bg-destructive/10"
                         @click="router.post('/queue/clear-failed')"
                     >
                         <Trash2 class="size-3" />
                         Clear Failed
                     </button>
+                </div>
+            </div>
+
+            <!-- Config — always shown so you can verify production values -->
+            <div class="mb-4 grid grid-cols-3 gap-3">
+                <div
+                    v-for="(value, key) in queueHealth.config"
+                    :key="key"
+                    class="rounded-md border px-3 py-2"
+                    :class="(key === 'queue_connection' && value === 'database') || (key === 'cache_store' && value === 'database') ? 'border-amber-400/40 bg-amber-500/10' : 'border-border bg-muted/30'"
+                >
+                    <p class="text-[10px] uppercase tracking-wider text-muted-foreground">{{ String(key).replace(/_/g, ' ') }}</p>
+                    <p class="mt-0.5 font-mono text-xs font-medium">{{ value }}</p>
+                </div>
+            </div>
+
+            <!-- Config warnings -->
+            <div v-if="queueConfigMismatch.length" class="mb-4 space-y-1.5">
+                <div
+                    v-for="warning in queueConfigMismatch"
+                    :key="warning"
+                    class="flex items-start gap-2 rounded-md border border-amber-400/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-400"
+                >
+                    <AlertTriangle class="mt-0.5 size-3 shrink-0" />
+                    {{ warning }}
+                </div>
+            </div>
+
+            <!-- DB/cache errors -->
+            <div v-if="queueHealth.errors.length" class="mb-4 space-y-1.5">
+                <div
+                    v-for="error in queueHealth.errors"
+                    :key="error"
+                    class="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 font-mono text-xs text-destructive"
+                >
+                    {{ error }}
                 </div>
             </div>
 
@@ -251,7 +303,7 @@ const barChartOptions = {
                     <div
                         v-for="photo in queueHealth.stuck_photos"
                         :key="photo.id"
-                        class="flex items-center justify-between rounded-md border border-border bg-background px-3 py-2 text-sm"
+                        class="flex items-center justify-between rounded-md border border-border bg-background px-3 py-2"
                     >
                         <div>
                             <span class="font-mono text-xs">{{ photo.filename }}</span>
@@ -259,7 +311,7 @@ const barChartOptions = {
                         </div>
                         <button
                             type="button"
-                            class="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                            class="inline-flex cursor-pointer items-center gap-1 text-xs text-primary hover:underline"
                             @click="router.post(`/queue/retry-photo/${photo.id}`)"
                         >
                             <RefreshCw class="size-3" />
@@ -286,6 +338,10 @@ const barChartOptions = {
                     </div>
                 </div>
             </div>
+
+            <p v-if="!hasQueueIssues && !queueConfigMismatch.length" class="text-sm text-muted-foreground">
+                No issues detected.
+            </p>
         </div>
 
         <!-- Bar charts -->
