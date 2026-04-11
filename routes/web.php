@@ -5,6 +5,7 @@ use App\Http\Controllers\AnalyticsController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\GalleryController;
 use App\Http\Controllers\PhotoController;
+use App\Http\Controllers\QueueController;
 use App\Http\Controllers\TournamentController;
 use Illuminate\Support\Facades\Route;
 
@@ -18,6 +19,9 @@ Route::post('/analytics/track', [AnalyticsController::class, 'track'])
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::post('/queue/retry-failed', [QueueController::class, 'retryFailed'])->name('queue.retry-failed');
+    Route::post('/queue/clear-failed', [QueueController::class, 'clearFailed'])->name('queue.clear-failed');
+    Route::post('/queue/retry-photo/{photo}', [QueueController::class, 'retryStuckPhoto'])->name('queue.retry-photo');
 
     // Static routes must come before wildcard routes
     Route::get('/tournaments/create', [TournamentController::class, 'create'])->name('tournaments.create');
