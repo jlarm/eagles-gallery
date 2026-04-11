@@ -49,6 +49,9 @@ const breadcrumbs = [
 setLayoutProps({ breadcrumbs });
 
 const hasUnprocessed = computed(() => props.album.photos.some((p) => !p.thumbnail_url));
+const processedCount = computed(() => props.album.photos.filter((p) => p.thumbnail_url).length);
+const totalCount = computed(() => props.album.photos.length);
+const processingProgress = computed(() => (totalCount.value > 0 ? Math.round((processedCount.value / totalCount.value) * 100) : 0));
 
 const { start: startPolling, stop: stopPolling } = usePoll(
     3000,
@@ -210,10 +213,21 @@ const pendingCount = computed(() => queue.value.filter((i) => i.status === 'pend
         <!-- Processing banner -->
         <div
             v-if="hasUnprocessed"
-            class="flex items-center gap-2 rounded-lg border border-amber-200/20 bg-amber-500/10 px-4 py-2.5 text-sm text-amber-600 dark:text-amber-300"
+            class="rounded-lg border border-amber-200/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-600 dark:text-amber-300"
         >
-            <Loader2 class="h-4 w-4 shrink-0 animate-spin" />
-            Photos are being processed…
+            <div class="flex items-center justify-between gap-2">
+                <div class="flex items-center gap-2">
+                    <Loader2 class="h-4 w-4 shrink-0 animate-spin" />
+                    Photos are being processed…
+                </div>
+                <span class="shrink-0 text-xs font-medium">{{ processedCount }} / {{ totalCount }}</span>
+            </div>
+            <div class="mt-2 h-1.5 overflow-hidden rounded-full bg-amber-200/20">
+                <div
+                    class="h-full rounded-full bg-amber-500 transition-all duration-500"
+                    :style="{ width: `${processingProgress}%` }"
+                />
+            </div>
         </div>
 
         <!-- Upload queue -->
