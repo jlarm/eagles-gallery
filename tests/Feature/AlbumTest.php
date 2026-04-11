@@ -60,7 +60,7 @@ it('validates required album fields', function (array $data, string $field) {
     'invalid date' => [['opponent' => 'Rival', 'date' => 'not-a-date'], 'date'],
 ]);
 
-it('shows an album with its photos', function () {
+it('shows an album with its photos paginated', function () {
     $album = Album::factory()->has(Photo::factory()->count(4))->create();
 
     $this->get("/albums/{$album->id}")
@@ -68,6 +68,27 @@ it('shows an album with its photos', function () {
         ->assertInertia(fn ($page) => $page
             ->component('Albums/Show')
             ->where('album.id', $album->id)
-            ->has('album.photos', 4)
+            ->has('photos.data', 4)
+            ->where('photos.total', 4)
+            ->where('photos.per_page', 20)
+        );
+});
+
+it('paginates album photos at 20 per page', function () {
+    $album = Album::factory()->has(Photo::factory()->count(25))->create();
+
+    $this->get("/albums/{$album->id}")
+        ->assertSuccessful()
+        ->assertInertia(fn ($page) => $page
+            ->where('photos.total', 25)
+            ->where('photos.last_page', 2)
+            ->has('photos.data', 20)
+        );
+
+    $this->get("/albums/{$album->id}?page=2")
+        ->assertSuccessful()
+        ->assertInertia(fn ($page) => $page
+            ->has('photos.data', 5)
+            ->where('photos.current_page', 2)
         );
 });

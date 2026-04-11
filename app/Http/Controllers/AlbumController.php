@@ -67,7 +67,8 @@ class AlbumController extends Controller
         AnalyticsEvent::record(AnalyticsEvent::GAME_VIEW, AnalyticsEvent::TRACKABLE_ALBUM, $album->id);
 
         return Inertia::render('Albums/Show', [
-            'album' => $album->load(['tournament', 'photos', 'coverPhoto']),
+            'album' => $album->load(['tournament', 'coverPhoto']),
+            'photos' => $album->photos()->paginate(20),
         ]);
     }
 }

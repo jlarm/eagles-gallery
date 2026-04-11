@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { Head, Link, usePoll } from '@inertiajs/vue3';
-import { ArrowLeft, CalendarDays, Check, Download, ImagePlus, Link2, Loader2, X } from 'lucide-vue-next';
+import { Head, Link, router, usePoll } from '@inertiajs/vue3';
+import { ArrowLeft, CalendarDays, Check, ChevronLeft, ChevronRight, Download, ImagePlus, Link2, Loader2, X } from 'lucide-vue-next';
 import { computed, ref, watch } from 'vue';
 import { useCopyLink } from '@/composables/useCopyLink';
 import { download as downloadPhoto } from '@/actions/App/Http/Controllers/PhotoController';
@@ -25,22 +25,31 @@ type Album = {
     opponent: string;
     date: string;
     tournament: Tournament;
-    photos: Photo[];
     cover_photo: Photo | null;
 };
 
-const props = defineProps<{ album: Album }>();
+type Paginator = {
+    data: Photo[];
+    current_page: number;
+    last_page: number;
+    total: number;
+    per_page: number;
+    from: number | null;
+    to: number | null;
+};
+
+const props = defineProps<{ album: Album; photos: Paginator }>();
 
 defineOptions({ layout: PublicLayout });
 
-const hasUnprocessed = computed(() => props.album.photos.some((p) => !p.thumbnail_url));
-const processedCount = computed(() => props.album.photos.filter((p) => p.thumbnail_url).length);
-const totalCount = computed(() => props.album.photos.length);
-const processingProgress = computed(() => (totalCount.value > 0 ? Math.round((processedCount.value / totalCount.value) * 100) : 0));
+const hasUnprocessed = computed(() => props.photos.data.some((p) => !p.thumbnail_url));
+const processedCount = computed(() => props.photos.data.filter((p) => p.thumbnail_url).length);
+const totalOnPage = computed(() => props.photos.data.length);
+const processingProgress = computed(() => (totalOnPage.value > 0 ? Math.round((processedCount.value / totalOnPage.value) * 100) : 0));
 
 const { start: startPolling, stop: stopPolling } = usePoll(
     3000,
-    { only: ['album'] },
+    { only: ['photos'] },
     { autoStart: false },
 );
 
@@ -71,15 +80,15 @@ function getXsrfToken(): string {
 
 function openNext() {
     if (!lightboxPhoto.value) return;
-    const idx = props.album.photos.indexOf(lightboxPhoto.value);
-    const next = props.album.photos[idx + 1];
+    const idx = props.photos.data.indexOf(lightboxPhoto.value);
+    const next = props.photos.data[idx + 1];
     if (next) lightboxPhoto.value = next;
 }
 
 function openPrev() {
     if (!lightboxPhoto.value) return;
-    const idx = props.album.photos.indexOf(lightboxPhoto.value);
-    const prev = props.album.photos[idx - 1];
+    const idx = props.photos.data.indexOf(lightboxPhoto.value);
+    const prev = props.photos.data[idx - 1];
     if (prev) lightboxPhoto.value = prev;
 }
 
@@ -87,6 +96,11 @@ function onLightboxKeydown(e: KeyboardEvent) {
     if (e.key === 'ArrowRight') openNext();
     else if (e.key === 'ArrowLeft') openPrev();
     else if (e.key === 'Escape') lightboxPhoto.value = null;
+}
+
+function goToPage(page: number) {
+    lightboxPhoto.value = null;
+    router.get('', { page }, { preserveState: true, preserveScroll: false });
 }
 
 const { copied, copyLink } = useCopyLink();
@@ -125,7 +139,7 @@ const { copied, copyLink } = useCopyLink();
                     {{ copied ? 'Copied!' : 'Copy link' }}
                 </button>
             </div>
-            <p class="text-sm text-eagle-muted">{{ album.photos.length }} photos — click to view &amp; download</p>
+            <p class="text-sm text-eagle-muted">{{ photos.total }} photos — click to view &amp; download</p>
         </div>
 
         <!-- Processing banner -->
@@ -138,7 +152,7 @@ const { copied, copyLink } = useCopyLink();
                     <Loader2 class="size-4 shrink-0 animate-spin" />
                     Photos are being processed, check back shortly…
                 </div>
-                <span class="shrink-0 text-xs font-medium">{{ processedCount }} / {{ totalCount }}</span>
+                <span class="shrink-0 text-xs font-medium">{{ processedCount }} / {{ totalOnPage }}</span>
             </div>
             <div class="mt-2 h-1.5 overflow-hidden rounded-full bg-amber-200/20">
                 <div
@@ -149,9 +163,9 @@ const { copied, copyLink } = useCopyLink();
         </div>
 
         <!-- Photo grid -->
-        <div v-if="album.photos.length" class="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+        <div v-if="photos.data.length" class="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
             <button
-                v-for="photo in album.photos"
+                v-for="photo in photos.data"
                 :key="photo.id"
                 type="button"
                 class="group relative aspect-square cursor-pointer overflow-hidden rounded-lg bg-muted"
@@ -174,6 +188,33 @@ const { copied, copyLink } = useCopyLink();
             <ImagePlus class="mb-4 size-12 text-eagle-border" />
             <p class="text-lg font-medium text-eagle-text">No photos yet</p>
             <p class="mt-1 text-sm text-eagle-muted">Check back soon.</p>
+        </div>
+
+        <!-- Pagination -->
+        <div v-if="photos.last_page > 1" class="flex items-center justify-between gap-4">
+            <button
+                type="button"
+                :disabled="photos.current_page === 1"
+                class="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-eagle-border bg-eagle-card px-3 py-1.5 text-sm text-eagle-blue transition-colors hover:border-eagle-blue/40 hover:text-eagle-text disabled:cursor-not-allowed disabled:opacity-40"
+                @click="goToPage(photos.current_page - 1)"
+            >
+                <ChevronLeft class="size-4" />
+                Previous
+            </button>
+
+            <span class="text-sm text-eagle-muted">
+                Page {{ photos.current_page }} of {{ photos.last_page }}
+            </span>
+
+            <button
+                type="button"
+                :disabled="photos.current_page === photos.last_page"
+                class="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-eagle-border bg-eagle-card px-3 py-1.5 text-sm text-eagle-blue transition-colors hover:border-eagle-blue/40 hover:text-eagle-text disabled:cursor-not-allowed disabled:opacity-40"
+                @click="goToPage(photos.current_page + 1)"
+            >
+                Next
+                <ChevronRight class="size-4" />
+            </button>
         </div>
     </div>
 
@@ -207,7 +248,7 @@ const { copied, copyLink } = useCopyLink();
 
             <!-- Prev -->
             <button
-                v-if="album.photos.indexOf(lightboxPhoto) > 0"
+                v-if="photos.data.indexOf(lightboxPhoto) > 0"
                 type="button"
                 class="absolute left-4 top-1/2 -translate-y-1/2 cursor-pointer rounded-full bg-white/10 p-2 text-white hover:bg-white/20"
                 @click="openPrev"
@@ -217,7 +258,7 @@ const { copied, copyLink } = useCopyLink();
 
             <!-- Next -->
             <button
-                v-if="album.photos.indexOf(lightboxPhoto) < album.photos.length - 1"
+                v-if="photos.data.indexOf(lightboxPhoto) < photos.data.length - 1"
                 type="button"
                 class="absolute right-4 top-1/2 -translate-y-1/2 cursor-pointer rounded-full bg-white/10 p-2 text-white hover:bg-white/20"
                 @click="openNext"
