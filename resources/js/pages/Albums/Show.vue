@@ -107,7 +107,15 @@ const { copied, copyLink } = useCopyLink();
 </script>
 
 <template>
-    <Head :title="`vs ${album.opponent}`" />
+    <Head :title="`vs ${album.opponent}`">
+        <meta property="og:title" :content="`Eagles vs ${album.opponent}`" />
+        <meta
+            property="og:description"
+            :content="new Date(album.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })"
+        />
+        <meta v-if="album.cover_photo?.web_url" property="og:image" :content="album.cover_photo.web_url" />
+        <meta property="og:type" content="website" />
+    </Head>
 
     <div class="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-6 py-8">
         <!-- Back -->
