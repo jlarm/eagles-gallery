@@ -182,7 +182,7 @@ class DashboardController extends Controller
     private function topGames(CarbonInterface $since): array
     {
         $counts = AnalyticsEvent::where('event_type', AnalyticsEvent::GAME_VIEW)
-            ->where('trackable_type', 'album')
+            ->where('trackable_type', AnalyticsEvent::TRACKABLE_ALBUM)
             ->where('created_at', '>=', $since)
             ->select('trackable_id', DB::raw('COUNT(*) as count'))
             ->groupBy('trackable_id')
