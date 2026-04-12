@@ -11,6 +11,7 @@ type Album = {
     opponent: string;
     date: string;
     slug: string;
+    published_at: string | null;
     view_count: number;
     cover_photo: { thumbnail_url: string | null } | null;
 };
@@ -19,6 +20,7 @@ type Tournament = {
     id: number;
     name: string;
     slug: string;
+    published_at: string | null;
     albums_count: number;
     view_count: number;
 };
@@ -79,7 +81,15 @@ const isAuthenticated = !!page.props.auth?.user;
                         <FolderOpen class="h-6 w-6" />
                     </div>
                     <div class="min-w-0 flex-1">
-                        <p class="truncate font-medium">{{ tournament.name }}</p>
+                        <div class="flex items-center gap-2">
+                            <p class="truncate font-medium">{{ tournament.name }}</p>
+                            <span
+                                v-if="isAuthenticated && !tournament.published_at"
+                                class="shrink-0 rounded-full bg-amber-500/15 px-2 py-0.5 text-xs font-medium text-amber-600 dark:text-amber-400"
+                            >
+                                Draft
+                            </span>
+                        </div>
                         <p class="text-sm text-muted-foreground">
                             {{ tournament.albums_count }} {{ tournament.albums_count === 1 ? 'game' : 'games' }}
                         </p>
@@ -115,7 +125,15 @@ const isAuthenticated = !!page.props.auth?.user;
                         </div>
                     </div>
                     <div class="p-3">
-                        <p class="font-medium">vs {{ album.opponent }}</p>
+                        <div class="flex items-center gap-2">
+                            <p class="font-medium">vs {{ album.opponent }}</p>
+                            <span
+                                v-if="isAuthenticated && !album.published_at"
+                                class="shrink-0 rounded-full bg-amber-500/15 px-2 py-0.5 text-xs font-medium text-amber-600 dark:text-amber-400"
+                            >
+                                Draft
+                            </span>
+                        </div>
                         <div class="flex items-center justify-between">
                             <p class="flex items-center gap-1 text-sm text-muted-foreground">
                                 <CalendarDays class="h-3.5 w-3.5" />

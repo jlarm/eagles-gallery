@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Head, Link, router, setLayoutProps } from '@inertiajs/vue3';
-import { CalendarDays, FolderOpen, Images, Plus, Trash2 } from 'lucide-vue-next';
-import { manage as manageTournament, destroy as destroyTournament } from '@/actions/App/Http/Controllers/TournamentController';
+import { CalendarDays, EyeOff, FolderOpen, Globe, Images, Plus, Trash2 } from 'lucide-vue-next';
+import { manage as manageTournament, destroy as destroyTournament, publish as publishTournament, unpublish as unpublishTournament } from '@/actions/App/Http/Controllers/TournamentController';
 import { manage as manageAlbum, create as createAlbum } from '@/actions/App/Http/Controllers/AlbumController';
 import { index as galleryIndex } from '@/actions/App/Http/Controllers/GalleryController';
 import { Button } from '@/components/ui/button';
@@ -11,6 +11,7 @@ type Album = {
     opponent: string;
     date: string;
     slug: string;
+    published_at: string | null;
     cover_photo: { thumbnail_url: string | null } | null;
 };
 
@@ -18,6 +19,7 @@ type Tournament = {
     id: number;
     name: string;
     slug: string;
+    published_at: string | null;
     albums: Album[];
 };
 
@@ -34,6 +36,14 @@ function deleteTournament() {
     if (!confirm(`Delete "${props.tournament.name}" and all its games and photos? This cannot be undone.`)) return;
     router.delete(destroyTournament.url(props.tournament));
 }
+
+function togglePublish() {
+    if (props.tournament.published_at) {
+        router.post(unpublishTournament.url(props.tournament));
+    } else {
+        router.post(publishTournament.url(props.tournament));
+    }
+}
 </script>
 
 <template>
@@ -46,7 +56,15 @@ function deleteTournament() {
                     <FolderOpen class="h-5 w-5" />
                 </div>
                 <div>
-                    <h1 class="text-2xl font-semibold tracking-tight">{{ tournament.name }}</h1>
+                    <div class="flex items-center gap-2">
+                        <h1 class="text-2xl font-semibold tracking-tight">{{ tournament.name }}</h1>
+                        <span
+                            v-if="!tournament.published_at"
+                            class="rounded-full bg-amber-500/15 px-2 py-0.5 text-xs font-medium text-amber-600 dark:text-amber-400"
+                        >
+                            Draft
+                        </span>
+                    </div>
                     <p class="text-sm text-muted-foreground">
                         {{ tournament.albums.length }} {{ tournament.albums.length === 1 ? 'game' : 'games' }}
                     </p>
@@ -56,6 +74,11 @@ function deleteTournament() {
                 <Button variant="destructive" size="sm" @click="deleteTournament">
                     <Trash2 class="mr-1 h-4 w-4" />
                     Delete Tournament
+                </Button>
+                <Button variant="outline" size="sm" @click="togglePublish">
+                    <EyeOff v-if="tournament.published_at" class="mr-1 h-4 w-4" />
+                    <Globe v-else class="mr-1 h-4 w-4" />
+                    {{ tournament.published_at ? 'Unpublish' : 'Publish' }}
                 </Button>
                 <Button as-child size="sm">
                     <Link :href="createAlbum()">
@@ -85,7 +108,15 @@ function deleteTournament() {
                     </div>
                 </div>
                 <div class="p-3">
-                    <p class="font-medium">vs {{ album.opponent }}</p>
+                    <div class="flex items-center gap-2">
+                        <p class="font-medium">vs {{ album.opponent }}</p>
+                        <span
+                            v-if="!album.published_at"
+                            class="rounded-full bg-amber-500/15 px-2 py-0.5 text-xs font-medium text-amber-600 dark:text-amber-400"
+                        >
+                            Draft
+                        </span>
+                    </div>
                     <p class="flex items-center gap-1 text-sm text-muted-foreground">
                         <CalendarDays class="h-3.5 w-3.5" />
                         {{ new Date(album.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) }}

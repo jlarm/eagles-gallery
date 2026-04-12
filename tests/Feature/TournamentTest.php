@@ -35,15 +35,49 @@ it('validates tournament name is required', function () {
         ->assertInvalid(['name']);
 });
 
-it('shows a tournament with its albums', function () {
-    $tournament = Tournament::factory()->create();
-    Album::factory()->for($tournament)->count(3)->create();
+it('shows a published tournament with its published albums', function () {
+    $tournament = Tournament::factory()->published()->create();
+    Album::factory()->published()->for($tournament)->count(2)->create();
+    Album::factory()->for($tournament)->create(); // draft album, should not appear
 
     $this->get("/tournaments/{$tournament->id}")
         ->assertSuccessful()
         ->assertInertia(fn ($page) => $page
             ->component('Tournaments/Show')
             ->where('tournament.id', $tournament->id)
-            ->has('tournament.albums', 3)
+            ->has('tournament.albums', 2)
         );
+});
+
+it('returns 404 for a draft tournament', function () {
+    $tournament = Tournament::factory()->create(); // draft by default
+
+    $this->get("/tournaments/{$tournament->id}")->assertNotFound();
+});
+
+it('publishes a tournament', function () {
+    $tournament = Tournament::factory()->create();
+
+    $this->actingAs(User::factory()->create())
+        ->post("/manage/tournaments/{$tournament->id}/publish")
+        ->assertRedirect();
+
+    expect($tournament->fresh()->published_at)->not->toBeNull();
+});
+
+it('unpublishes a tournament', function () {
+    $tournament = Tournament::factory()->published()->create();
+
+    $this->actingAs(User::factory()->create())
+        ->post("/manage/tournaments/{$tournament->id}/unpublish")
+        ->assertRedirect();
+
+    expect($tournament->fresh()->published_at)->toBeNull();
+});
+
+it('requires auth to publish or unpublish a tournament', function () {
+    $tournament = Tournament::factory()->create();
+
+    $this->post("/manage/tournaments/{$tournament->id}/publish")->assertRedirect('/login');
+    $this->post("/manage/tournaments/{$tournament->id}/unpublish")->assertRedirect('/login');
 });

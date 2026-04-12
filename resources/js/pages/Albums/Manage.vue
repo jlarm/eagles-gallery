@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { Head, router, setLayoutProps, usePoll } from '@inertiajs/vue3';
-import { CalendarDays, Eye, FolderX, GripVertical, ImagePlus, Loader2, Star, Trash2, Upload } from 'lucide-vue-next';
+import { CalendarDays, Eye, EyeOff, FolderX, Globe, GripVertical, ImagePlus, Loader2, Star, Trash2, Upload } from 'lucide-vue-next';
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
-import { manage as manageAlbum } from '@/actions/App/Http/Controllers/AlbumController';
+import { manage as manageAlbum, publish as publishAlbum, unpublish as unpublishAlbum } from '@/actions/App/Http/Controllers/AlbumController';
 import { manage as manageTournament } from '@/actions/App/Http/Controllers/TournamentController';
 import { index as galleryIndex } from '@/actions/App/Http/Controllers/GalleryController';
 import { presign, store as storePhotos, setCover, destroy as destroyPhoto, reorder as reorderPhotos } from '@/actions/App/Http/Controllers/PhotoController';
@@ -25,6 +25,7 @@ type Album = {
     id: number;
     opponent: string;
     date: string;
+    published_at: string | null;
     tournament: Tournament;
     photos: Photo[];
     cover_photo: Photo | null;
@@ -222,6 +223,14 @@ function deleteAlbum() {
     router.delete(destroyAlbum.url(props.album));
 }
 
+function togglePublish() {
+    if (props.album.published_at) {
+        router.post(unpublishAlbum.url(props.album));
+    } else {
+        router.post(publishAlbum.url(props.album));
+    }
+}
+
 const pendingCount = computed(() => queue.value.filter((i) => i.status === 'pending' || i.status === 'uploading').length);
 
 // Photo grid reordering
@@ -297,13 +306,26 @@ function onPhotoDragEnd() {
                     <CalendarDays class="h-3.5 w-3.5" />
                     {{ new Date(album.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) }}
                 </p>
-                <h1 class="text-2xl font-semibold tracking-tight">vs {{ album.opponent }}</h1>
+                <div class="flex items-center gap-2">
+                    <h1 class="text-2xl font-semibold tracking-tight">vs {{ album.opponent }}</h1>
+                    <span
+                        v-if="!album.published_at"
+                        class="rounded-full bg-amber-500/15 px-2 py-0.5 text-xs font-medium text-amber-600 dark:text-amber-400"
+                    >
+                        Draft
+                    </span>
+                </div>
                 <p class="text-sm text-muted-foreground">{{ album.photos.length }} photos</p>
             </div>
             <div class="flex items-center gap-2">
                 <Button variant="destructive" @click="deleteAlbum">
                     <FolderX class="mr-1 h-4 w-4" />
                     Delete Game
+                </Button>
+                <Button variant="outline" @click="togglePublish">
+                    <EyeOff v-if="album.published_at" class="mr-1 h-4 w-4" />
+                    <Globe v-else class="mr-1 h-4 w-4" />
+                    {{ album.published_at ? 'Unpublish' : 'Publish' }}
                 </Button>
                 <Button @click="fileInput?.click()">
                     <Upload class="mr-1.5 h-4 w-4" />

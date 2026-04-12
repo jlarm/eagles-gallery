@@ -61,7 +61,7 @@ it('validates required album fields', function (array $data, string $field) {
 ]);
 
 it('shows an album with its photos paginated', function () {
-    $album = Album::factory()->has(Photo::factory()->count(4))->create();
+    $album = Album::factory()->published()->has(Photo::factory()->count(4))->create();
 
     $this->get("/albums/{$album->id}")
         ->assertSuccessful()
@@ -75,7 +75,7 @@ it('shows an album with its photos paginated', function () {
 });
 
 it('paginates album photos at 20 per page', function () {
-    $album = Album::factory()->has(Photo::factory()->count(25))->create();
+    $album = Album::factory()->published()->has(Photo::factory()->count(25))->create();
 
     $this->get("/albums/{$album->id}")
         ->assertSuccessful()
@@ -91,4 +91,37 @@ it('paginates album photos at 20 per page', function () {
             ->has('photos.data', 5)
             ->where('photos.current_page', 2)
         );
+});
+
+it('returns 404 for a draft album', function () {
+    $album = Album::factory()->create(); // draft by default
+
+    $this->get("/albums/{$album->id}")->assertNotFound();
+});
+
+it('publishes an album', function () {
+    $album = Album::factory()->create();
+
+    $this->actingAs(User::factory()->create())
+        ->post("/manage/albums/{$album->id}/publish")
+        ->assertRedirect();
+
+    expect($album->fresh()->published_at)->not->toBeNull();
+});
+
+it('unpublishes an album', function () {
+    $album = Album::factory()->published()->create();
+
+    $this->actingAs(User::factory()->create())
+        ->post("/manage/albums/{$album->id}/unpublish")
+        ->assertRedirect();
+
+    expect($album->fresh()->published_at)->toBeNull();
+});
+
+it('requires auth to publish or unpublish an album', function () {
+    $album = Album::factory()->create();
+
+    $this->post("/manage/albums/{$album->id}/publish")->assertRedirect('/login');
+    $this->post("/manage/albums/{$album->id}/unpublish")->assertRedirect('/login');
 });

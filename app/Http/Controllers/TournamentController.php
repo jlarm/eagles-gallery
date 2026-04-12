@@ -43,12 +43,31 @@ class TournamentController extends Controller
         return redirect()->route('dashboard');
     }
 
+    public function publish(Tournament $tournament): RedirectResponse
+    {
+        $tournament->publish();
+
+        return back();
+    }
+
+    public function unpublish(Tournament $tournament): RedirectResponse
+    {
+        $tournament->unpublish();
+
+        return back();
+    }
+
     public function show(Tournament $tournament): Response
     {
+        abort_if(! $tournament->isPublished(), 404);
+
         AnalyticsEvent::record(AnalyticsEvent::TOURNAMENT_VIEW, AnalyticsEvent::TRACKABLE_TOURNAMENT, $tournament->id);
 
         return Inertia::render('Tournaments/Show', [
-            'tournament' => $tournament->load('albums.coverPhoto'),
+            'tournament' => $tournament->load([
+                'albums' => fn ($q) => $q->published()->orderBy('date'),
+                'albums.coverPhoto',
+            ]),
         ]);
     }
 }

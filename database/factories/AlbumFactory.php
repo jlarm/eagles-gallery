@@ -22,7 +22,15 @@ class AlbumFactory extends Factory
             'opponent' => $opponent,
             'date' => $date,
             'slug' => Str::slug($opponent.'-'.$date),
+            'published_at' => null,
         ];
+    }
+
+    public function published(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'published_at' => now(),
+        ]);
     }
 
     public function forTournament(): static

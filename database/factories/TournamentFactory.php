@@ -18,6 +18,14 @@ class TournamentFactory extends Factory
         return [
             'name' => $name,
             'slug' => Str::slug($name),
+            'published_at' => null,
         ];
+    }
+
+    public function published(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'published_at' => now(),
+        ]);
     }
 }

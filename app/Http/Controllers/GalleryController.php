@@ -23,8 +23,11 @@ class GalleryController extends Controller
     /** @return array<string, mixed> */
     private function galleryData(): array
     {
+        $isGuest = ! auth()->check();
+
         return [
-            'tournaments' => Tournament::withCount('albums')
+            'tournaments' => Tournament::when($isGuest, fn ($q) => $q->published())
+                ->withCount(['albums' => fn ($q) => $q->when($isGuest, fn ($q) => $q->published())])
                 ->addSelect([
                     'view_count' => AnalyticsEvent::selectRaw('count(*)')
                         ->whereColumn('trackable_id', 'tournaments.id')
@@ -32,7 +35,8 @@ class GalleryController extends Controller
                 ])
                 ->orderBy('name')
                 ->get(),
-            'standaloneAlbums' => Album::with('coverPhoto')
+            'standaloneAlbums' => Album::when($isGuest, fn ($q) => $q->published())
+                ->with('coverPhoto')
                 ->addSelect([
                     '*',
                     'view_count' => AnalyticsEvent::selectRaw('count(*)')

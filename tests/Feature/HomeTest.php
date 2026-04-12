@@ -4,8 +4,8 @@ use App\Models\Album;
 use App\Models\Tournament;
 
 it('renders the home page with gallery data', function () {
-    Tournament::factory()->create();
-    Album::factory()->create();
+    Tournament::factory()->published()->create();
+    Album::factory()->published()->create();
 
     $this->get('/')
         ->assertSuccessful()
@@ -17,9 +17,9 @@ it('renders the home page with gallery data', function () {
 });
 
 it('separates tournament albums from standalone albums on home page', function () {
-    $tournament = Tournament::factory()->create();
-    Album::factory()->for($tournament)->create();
-    $standalone = Album::factory()->create();
+    $tournament = Tournament::factory()->published()->create();
+    Album::factory()->published()->for($tournament)->create();
+    $standalone = Album::factory()->published()->create();
 
     $this->get('/')
         ->assertSuccessful()

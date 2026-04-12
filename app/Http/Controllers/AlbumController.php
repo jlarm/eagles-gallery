@@ -62,8 +62,24 @@ class AlbumController extends Controller
         return redirect()->route('dashboard');
     }
 
+    public function publish(Album $album): RedirectResponse
+    {
+        $album->publish();
+
+        return back();
+    }
+
+    public function unpublish(Album $album): RedirectResponse
+    {
+        $album->unpublish();
+
+        return back();
+    }
+
     public function show(Album $album): Response
     {
+        abort_if(! $album->isPublished(), 404);
+
         AnalyticsEvent::record(AnalyticsEvent::GAME_VIEW, AnalyticsEvent::TRACKABLE_ALBUM, $album->id);
 
         return Inertia::render('Albums/Show', [
